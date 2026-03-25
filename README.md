@@ -29,6 +29,14 @@ Este sistema faz parte do **Projeto Integrador 3** do curso de **Engenharia de S
 
 ---
 
+## 📁 Documentação
+
+| Artefato | Descrição | Link |
+|----------|-----------|------|
+| Planilha de Startups | Base de dados simulada com 5 startups fictícias do ecossistema Mescla | [Ver planilha](https://github.com/bruno-cesar02/ES-PI3-2026-T1-G37/blob/main/Docs/planilha_startups_PI3_G37.xlsx) |
+
+---
+
 ## 🎯 Funcionalidades
 
 ### Autenticação
@@ -166,6 +174,9 @@ ES-PI3-2026-T0101-G37/
 │   │   ├── models/          # DTOs
 │   │   └── main.dart
 │   └── pubspec.yaml
+│
+├── Docs/                    # Documentação e artefatos do projeto
+│   └── planilha_startups_PI3_G37.xlsx
 │
 └── README.md
 ```
