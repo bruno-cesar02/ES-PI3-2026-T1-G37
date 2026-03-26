@@ -177,6 +177,7 @@ ES-PI3-2026-T0101-G37/
 │
 ├── Docs/                    # Documentação e artefatos do projeto
 │   └── planilha_startups_PI3_G37.xlsx
+│   └── MesclaInvest_MapaMental.pdf
 │
 └── README.md
 ```
