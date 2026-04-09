@@ -24,8 +24,10 @@ Este sistema faz parte do **Projeto Integrador 3** do curso de **Engenharia de S
 |------|----|--------|
 | Bruno César | 24795502 | [@bruno-cesar02](https://github.com/bruno-cesar02) |
 | Eduardo Neves | 24026029 | [@Edunevesa1](https://github.com/Edunevesa1) |
+| Luiz Coutinho | — | [@LuizPolydoroCoutinho](https://github.com/LuizPolydoroCoutinho) |
 | Nicolas Nogueira | 24801664 | [@nickinh0](https://github.com/nickinh0) |
 | Otávio Augusto | 24025832 | [@otavigoto](https://github.com/otavigoto) |
+| Tomás Cubeiro | — | [@tomascubeiro](https://github.com/tomascubeiro) |
 
 ---
 
@@ -34,6 +36,7 @@ Este sistema faz parte do **Projeto Integrador 3** do curso de **Engenharia de S
 | Artefato | Descrição | Link |
 |----------|-----------|------|
 | Planilha de Startups | Base de dados simulada com 5 startups fictícias do ecossistema Mescla | [Ver planilha](https://github.com/bruno-cesar02/ES-PI3-2026-T1-G37/blob/main/Docs/planilha_startups_PI3_G37.xlsx) |
+| Mapa Mental | Mapa mental do projeto MesclaInvest | [Ver mapa mental](https://github.com/bruno-cesar02/ES-PI3-2026-T1-G37/blob/main/Docs/MesclaInvest_MapaMental.pdf) |
 
 ---
 
