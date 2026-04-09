@@ -37,6 +37,7 @@ Este sistema faz parte do **Projeto Integrador 3** do curso de **Engenharia de S
 |----------|-----------|------|
 | Planilha de Startups | Base de dados simulada com 5 startups fictícias do ecossistema Mescla | [Ver planilha](https://github.com/bruno-cesar02/ES-PI3-2026-T1-G37/blob/main/Docs/planilha_startups_PI3_G37.xlsx) |
 | Mapa Mental | Mapa mental do projeto MesclaInvest | [Ver mapa mental](https://github.com/bruno-cesar02/ES-PI3-2026-T1-G37/blob/main/Docs/MesclaInvest_MapaMental.pdf) |
+| Protótipo | Protótipo das telas no Figma | [Ver Protótipo](https://www.figma.com/design/iFanzqYmKIKEcJ7jwSX0WY/MesclaInvest?node-id=93-283&p=f&t=UXkwEj6OCs1PIzGT-0) |
 
 ---
 
