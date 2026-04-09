@@ -24,10 +24,10 @@ Este sistema faz parte do **Projeto Integrador 3** do curso de **Engenharia de S
 |------|----|--------|
 | Bruno César | 24795502 | [@bruno-cesar02](https://github.com/bruno-cesar02) |
 | Eduardo Neves | 24026029 | [@Edunevesa1](https://github.com/Edunevesa1) |
-| Luiz Coutinho | — | [@LuizPolydoroCoutinho](https://github.com/LuizPolydoroCoutinho) |
+| Luiz Coutinho | 24025981 | [@LuizPolydoroCoutinho](https://github.com/LuizPolydoroCoutinho) |
 | Nicolas Nogueira | 24801664 | [@nickinh0](https://github.com/nickinh0) |
 | Otávio Augusto | 24025832 | [@otavigoto](https://github.com/otavigoto) |
-| Tomás Cubeiro | — | [@tomascubeiro](https://github.com/tomascubeiro) |
+| Tomás Cubeiro | 24023817 | [@tomascubeiro](https://github.com/tomascubeiro) |
 
 ---
 
