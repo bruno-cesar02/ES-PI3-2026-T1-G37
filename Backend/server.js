@@ -28,5 +28,5 @@ app.use(middleware);
 app.use(routes);
 
 app.listen(3300, () => {
-  console.log('Servidor rodando na porta:  127.0.0.1:3300');
+  console.log('Servidor rodando na porta: 127.0.0.1:3300');
 });
