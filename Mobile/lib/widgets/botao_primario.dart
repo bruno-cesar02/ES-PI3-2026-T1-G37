@@ -1,3 +1,6 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
+
 import 'package:flutter/material.dart';
 
 /// Botão reutilizável do MesclaInvest.

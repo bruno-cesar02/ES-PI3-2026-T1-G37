@@ -1,6 +1,9 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502 */
+
 import 'package:flutter/material.dart';
 import 'screens/tela_inicial_screen.dart';
-
+import 'screens/cadastro_screen.dart';
 // ─────────────────────────────────────────────
 // Ponto de entrada do app — não mude essa linha
 // ─────────────────────────────────────────────
@@ -40,7 +43,7 @@ class MesclaInvestApp extends StatelessWidget {
       //
       // ADICIONE AQUI cada nova tela que você criar:
       routes: {
-        '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
+        '/cadastro': (context) => const CadastroScreen(),
         '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
         // '/esqueceu-senha': (context) => const EsqueceuSenhaScreen(),
         // '/dashboard':      (context) => const DashboardScreen(),
