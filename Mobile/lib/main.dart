@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'config/firebase_setup.dart'; 
 import 'screens/tela_inicial_screen.dart';
+import 'screens/forgot_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,15 +37,24 @@ class MesclaInvestApp extends StatelessWidget {
 
       // ── TELA INICIAL ────────────────────────────────────────────────
       home: const TelaInicialScreen(),
+      initialRoute: '/esqueceu-senha',
 
       // ── ROTAS DO APLICATIVO ─────────────────────────────────────────
       
       routes: {
         
-        // '/dashboard': (context) => const DashboardScreen(),
+      // ── Tela inicial ────────────────────────────────────────────────
+      // É aqui que você define qual tela aparece primeiro.
+      // home: const TelaInicialScreen(),
 
-        // E quando criar a tela de Perfil do Investidor/Startup:
-        // '/perfil': (context) => const PerfilScreen(),
+      // ── Rotas nomeadas ──────────────────────────────────────────────
+      // Funciona como um mapa de endereços do app.
+      // Para navegar: Navigator.pushNamed(context, '/cadastro')
+      //
+      // ADICIONE AQUI cada nova tela que você criar:
+        '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
+        '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
+        '/esqueceu-senha': (context) => const ForgotPasswordScreen(),
       },
     );
   }
