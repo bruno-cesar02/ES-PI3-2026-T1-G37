@@ -8,6 +8,11 @@ const router = express.Router();
 
 //Adicionar as rotas aqui
 
+// Importa as rotas específicas
+const authRoutes = require('./src/routes/authRoutes');
+// Todas as rotas que vierem de authRoutes terão o prefixo /auth
+router.use('/auth', authRoutes);
+
 /*
 router.get('/', (req, res) => {
   res.send('Bem-vindo à API');

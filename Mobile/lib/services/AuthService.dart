@@ -18,7 +18,7 @@ import 'package:http/http.dart' as http;
 ///   ex: 'http://192.168.0.10:3000'
 class AuthService {
   // ⚠️ Troque pelo IP da sua máquina se estiver num celular físico
-  static const String _baseUrl = 'http://10.0.2.2:3000';
+  static const String _baseUrl = 'http://10.0.2.2:3300';
 
   /// Envia os dados de cadastro para o Node.js.
   ///

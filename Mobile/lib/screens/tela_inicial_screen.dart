@@ -207,8 +207,31 @@ class _GavetaFormularioState extends State<_GavetaFormulario> {
   }
 
   void _erro(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.redAccent),
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A2A4A), // Fundo combinando com a gaveta
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Atenção',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          msg,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx), // Fecha o pop-up
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF1E90FF), fontSize: 16),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
