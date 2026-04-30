@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'screens/tela_inicial_screen.dart';
-import 'screens/cadastro_screen.dart';
+
 // ─────────────────────────────────────────────
 // Ponto de entrada do app — não mude essa linha
 // ─────────────────────────────────────────────
@@ -30,7 +30,7 @@ class MesclaInvestApp extends StatelessWidget {
           primary: Color(0xFF1E90FF),   // azul dos botões primários
           surface: Color(0xFF000759),   // azul escuro do fundo
         ),
-        fontFamily: 'SF Pro', // troque por 'Inter' se não tiver SF Pro
+        fontFamily: 'SF Pro', // troque por 'Inter' s e não tiver SF Pro
       ),
 
       // ── Tela inicial ────────────────────────────────────────────────
@@ -38,15 +38,14 @@ class MesclaInvestApp extends StatelessWidget {
       home: const TelaInicialScreen(),
 
       // ── Rotas nomeadas ──────────────────────────────────────────────
-      // Funciona como um mapa de endereços do app.
-      // Para navegar: Navigator.pushNamed(context, '/cadastro')
+      // Como Cadastro e Login agora são "Gavetas" (BottomSheets) que abrem
+      // por cima da Tela Inicial, eles não precisam de rotas aqui.
       //
-      // ADICIONE AQUI cada nova tela que você criar:
+      // ADICIONE AQUI apenas Telas Inteiras novas:
       routes: {
-        '/cadastro': (context) => const CadastroScreen(),
-        '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
-        // '/esqueceu-senha': (context) => const EsqueceuSenhaScreen(),
-        // '/dashboard':      (context) => const DashboardScreen(),
+        // Exemplo: Quando o seu amigo terminar o login, ele vai mandar o
+        // usuário para o Dashboard, aí vocês adicionam essa rota aqui:
+        // '/dashboard': (context) => const DashboardScreen(),
       },
     );
   }
