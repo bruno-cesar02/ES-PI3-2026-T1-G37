@@ -1,29 +1,13 @@
 /* Bruno César Gonçalves Lima Mota
    RA: 24795502*/
 
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
 
-/// AuthService — o "garçom" entre o Flutter e o Node.js.
-///
-/// Analogia: pense no Flutter como o cliente do restaurante,
-/// o Node.js como a cozinha, e esse arquivo como o garçom.
-/// O garçom (AuthService) leva o pedido (dados do cadastro)
-/// para a cozinha (Node), que salva no estoque (Firebase).
-///
-/// CONFIGURAÇÃO:
-/// Troque [_baseUrl] pelo endereço real do seu backend Node.js.
-/// - Emulador Android: use 'http://10.0.2.2:3000'
-/// - Dispositivo físico na mesma rede WiFi: use o IP da sua máquina
-///   ex: 'http://192.168.0.10:3000'
 class AuthService {
-  // ⚠️ Troque pelo IP da sua máquina se estiver num celular físico
-  static const String _baseUrl = 'http://10.0.2.2:3300';
-
-  /// Envia os dados de cadastro para o Node.js.
+  /// Envia os dados de cadastro direto para a Cloud Function do Firebase.
   ///
   /// Retorna [true] se o cadastro funcionou.
-  /// Lança uma [Exception] com a mensagem de erro se falhar.
+  /// Lança uma [Exception] com a mensagem de erro que veio do backend se falhar.
   static Future<bool> cadastrar({
     required String nome,
     required String email,
@@ -32,30 +16,28 @@ class AuthService {
     required String senha,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/auth/cadastro'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nome': nome,
-          'email': email,
-          'cpf': cpf,
-          'celular': celular,
-          'senha': senha,
-        }),
-      );
+      // Chama a função pelo nome exato que está lá no backend TypeScript
+      final callable = FirebaseFunctions.instance.httpsCallable('createUser');
 
-      final data = jsonDecode(response.body);
+      // Manda o pacote de dados. O SDK do Firebase já sabe o IP e a porta corretos
+      // por causa daquela configuração do Emulador no main.dart!
+      await callable.call({
+        'nome': nome,
+        'email': email,
+        'cpf': cpf,
+        'celular': celular,
+        'senha': senha,
+      });
 
-      if (response.statusCode == 201) {
-        // Cadastro criado com sucesso
-        return true;
-      } else {
-        // Servidor respondeu com erro (ex: email já cadastrado)
-        throw Exception(data['mensagem'] ?? 'Erro ao cadastrar');
-      }
+      // Se passou da linha de cima sem dar erro, é porque retornou status 200 (Sucesso)
+      return true;
+
+    } on FirebaseFunctionsException catch (e) {
+      // O Firebase captura as mensagens de erro exatas do backend (ex: "Este e-mail já está em uso.")
+      throw Exception(e.message ?? 'Erro desconhecido no servidor.');
     } catch (e) {
-      // Sem internet, servidor fora do ar, etc.
-      rethrow;
+      // Caso caia a internet do celular
+      throw Exception('Erro de conexão: Verifique sua internet.');
     }
   }
 }

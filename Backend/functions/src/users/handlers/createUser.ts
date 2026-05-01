@@ -51,4 +51,4 @@ export const createUser = onCall(async (request) => {
     await auth.deleteUser(userRecord.uid);
     throw new HttpsError("internal", "Erro ao salvar os dados. Tente novamente.");
   }
-});
+});   

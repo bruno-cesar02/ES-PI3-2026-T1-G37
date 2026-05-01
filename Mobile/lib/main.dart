@@ -2,12 +2,15 @@
    RA: 24795502 */
 
 import 'package:flutter/material.dart';
+import 'config/firebase_setup.dart'; // Importa a configuração separada
 import 'screens/tela_inicial_screen.dart';
 
-// ─────────────────────────────────────────────
-// Ponto de entrada do app — não mude essa linha
-// ─────────────────────────────────────────────
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Chama a configuração do banco de dados (que agora está em outro arquivo) ──
+  await FirebaseSetup.inicializar();
+
   runApp(const MesclaInvestApp());
 }
 
@@ -18,34 +21,30 @@ class MesclaInvestApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MesclaInvest',
-      debugShowCheckedModeBanner: false, // remove o banner "debug" no canto
+      debugShowCheckedModeBanner: false,
 
-      // ── Tema global do app ──────────────────────────────────────────
-      // Centraliza as cores para você não precisar repetir em toda tela.
-      // Quando o design mudar, você muda só aqui.
+      // ── TEMA GLOBAL DO APP ──────────────────────────────────────────
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF1E90FF),   // azul dos botões primários
-          surface: Color(0xFF000759),   // azul escuro do fundo
+          primary: Color(0xFF1E90FF),
+          surface: Color(0xFF000759),
         ),
-        fontFamily: 'SF Pro', // troque por 'Inter' s e não tiver SF Pro
+        fontFamily: 'SF Pro',
       ),
 
-      // ── Tela inicial ────────────────────────────────────────────────
-      // É aqui que você define qual tela aparece primeiro.
+      // ── TELA INICIAL ────────────────────────────────────────────────
       home: const TelaInicialScreen(),
 
-      // ── Rotas nomeadas ──────────────────────────────────────────────
-      // Como Cadastro e Login agora são "Gavetas" (BottomSheets) que abrem
-      // por cima da Tela Inicial, eles não precisam de rotas aqui.
-      //
-      // ADICIONE AQUI apenas Telas Inteiras novas:
+      // ── ROTAS DO APLICATIVO ─────────────────────────────────────────
+      // É aqui que você vai registrar as próximas telas inteiras do app!
       routes: {
-        // Exemplo: Quando o seu amigo terminar o login, ele vai mandar o
-        // usuário para o Dashboard, aí vocês adicionam essa rota aqui:
+        // Quando você criar a tela de Dashboard, por exemplo, é só descomentar:
         // '/dashboard': (context) => const DashboardScreen(),
+
+        // E quando criar a tela de Perfil do Investidor/Startup:
+        // '/perfil': (context) => const PerfilScreen(),
       },
     );
   }
