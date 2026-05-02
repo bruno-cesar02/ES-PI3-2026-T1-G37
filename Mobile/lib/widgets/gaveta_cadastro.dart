@@ -1,9 +1,11 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import 'package:flutter/material.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
 import 'notificacao.dart';
 import 'package:mobile/services/AuthService.dart';
-import 'gaveta_login.dart'; // Para poder trocar de tela
+import 'gaveta_login.dart'; 
 
 class GavetaCadastro extends StatefulWidget {
   const GavetaCadastro({super.key});
@@ -33,7 +35,7 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
   }
 
   Future<void> _enviarCadastro() async {
-    // 1. Validações visuais usando a sua Notificação customizada
+    
     if (_nomeController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _cpfController.text.isEmpty ||
@@ -57,7 +59,7 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
     setState(() => _carregando = true);
 
     try {
-      // 2. Chama o Firebase no backend (Exatamente como estava funcionando!)
+      // 2. Chama o Firebase no backend 
       await AuthService.cadastrar(
         nome: _nomeController.text.trim(),
         email: _emailController.text.trim(),
@@ -68,11 +70,11 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
 
       if (mounted) {
         Navigator.pop(context); // Fecha a gaveta
-        // 3. Sucesso usando a notificação bonitona ao invés do SnackBar padrão
+  
         Notificacao.sucesso(context, 'Conta criada com sucesso! Faça login para continuar.');
       }
     } catch (e) {
-      // 4. Erros do Backend caindo direto na sua notificação elegante!
+      
       Notificacao.erro(context, e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _carregando = false);

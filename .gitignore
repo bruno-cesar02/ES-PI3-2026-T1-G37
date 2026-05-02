@@ -19,12 +19,6 @@ migrate_working_dir/
 *.iml
 *.ipr
 *.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -62,3 +56,7 @@ Desktop.ini
 # Variáveis de ambiente com senhas/tokens de API
 .env
 *.env
+
+# Ignorar configuracoes de IDEs
+.idea/
+.vscode/

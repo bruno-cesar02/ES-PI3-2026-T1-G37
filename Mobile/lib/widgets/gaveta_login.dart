@@ -27,7 +27,7 @@ class _GavetaLoginState extends State<GavetaLogin> {
       _erro('Preencha e-mail e senha.');
       return;
     }
-    // SEU AMIGO VAI TRABALHAR AQUI
+    
     _erro('Login ainda não implementado.');
   }
 

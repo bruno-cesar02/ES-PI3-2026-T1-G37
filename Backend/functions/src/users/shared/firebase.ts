@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import {getAuth} from "firebase-admin/auth";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";

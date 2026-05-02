@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-// ── Configurações do Emulador Local baseadas no PDF do professor ──
-const _projectId = 'pi3-g37'; // Coloque o ID do seu projeto aqui se souber, ou deixe esse genérico
+// ── Configurações do Emulador Local
+const _projectId = 'pi3-g37';
 const _functionsOrigin = 'http://127.0.0.1:5001';
 
-// Função auxiliar que o professor usa para montar a URL da Function
+
 Uri _functionUri(String functionName) {
   return Uri.parse('$_functionsOrigin/$_projectId/us-central1/$functionName');
 }
@@ -16,7 +16,7 @@ void main() {
 
     test('createUser deve criar usuário no Auth e salvar no Firestore', () async {
 
-      // 1. Prepara os dados falsos para o teste (igual sua gaveta enviaria)
+      // 1. Prepara os dados falsos para o teste 
       final dadosCadastro = {
         'nome': 'Bruno Mota Teste',
         'email': 'bruno.teste@puc-campinas.edu.br',
@@ -29,7 +29,7 @@ void main() {
 
       // 2. Chama a function "createUser" localmente
       final response = await http.post(
-        _functionUri('createUser'), // Nome exato da função que você exportou no index.ts
+        _functionUri('createUser'), 
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'data': dadosCadastro}),
       );
@@ -64,14 +64,14 @@ void main() {
       // Verifica se a function retornou um erro
       expect(payload['error'], isNotNull);
 
-      // Verifica se a mensagem de erro é exatamente a que nós programamos no backend
+      // Verifica se a mensagem de erro é exatamente a do backend
       expect(payload['error']['message'], 'Este e-mail já está em uso.');
     });
     test('Deve bloquear cadastro se faltarem campos obrigatórios', () async {
       final dadosIncompletos = {
         'nome': 'Bruno',
         'email': 'bruno@email.com',
-        // Ops, esqueci de mandar o CPF, o celular e a senha!
+        //falta cpf, celular e etc...
       };
 
       final response = await http.post(
@@ -103,7 +103,7 @@ void main() {
       final payload = jsonDecode(response.body);
 
       expect(payload['error'], isNotNull);
-      // Como não fizemos um if específico para senha fraca, ele cai no erro genérico do catch
+      
       expect(payload['error']['message'], 'Erro ao criar o usuário no sistema de senhas.');
     });
   });

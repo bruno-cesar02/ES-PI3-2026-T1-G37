@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import 'package:flutter/material.dart';
 
 /// Sistema de notificações do MesclaInvest.

@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import {HttpsError, onCall} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import {CreateUserRequest} from "../types";

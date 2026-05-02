@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import {UserDocument} from "../types";
 import {db} from "../shared/firebase";
 import {FieldValue} from "firebase-admin/firestore";

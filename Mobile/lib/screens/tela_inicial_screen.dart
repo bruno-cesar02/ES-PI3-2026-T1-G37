@@ -2,8 +2,8 @@
    RA: 24795502*/
 import 'package:flutter/material.dart';
 import '../widgets/botao_primario.dart';
-import '../widgets/gaveta_cadastro.dart'; // IMPORTA AQUI
-import '../widgets/gaveta_login.dart';    // IMPORTA AQUI
+import '../widgets/gaveta_cadastro.dart'; 
+import '../widgets/gaveta_login.dart';    
 
 class TelaInicialScreen extends StatefulWidget {
   const TelaInicialScreen({super.key});
@@ -15,14 +15,14 @@ class TelaInicialScreen extends StatefulWidget {
 class _TelaInicialScreenState extends State<TelaInicialScreen> {
   bool _mostrarBotoes = true;
 
-  void _abrirGaveta(Widget gaveta) async { // Agora recebe um Widget
+  void _abrirGaveta(Widget gaveta) async {
     setState(() => _mostrarBotoes = false);
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => gaveta, // Mostra o widget que você passar
+      builder: (context) => gaveta, 
     );
 
     if (mounted) {
