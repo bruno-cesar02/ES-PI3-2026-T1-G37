@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
+import 'notificacao.dart';
 import 'package:mobile/services/AuthService.dart';
 import 'gaveta_login.dart'; // Para poder trocar de tela
 
@@ -32,17 +33,31 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
   }
 
   Future<void> _enviarCadastro() async {
-    if (_nomeController.text.isEmpty || _emailController.text.isEmpty || _cpfController.text.isEmpty || _celularController.text.isEmpty || _senhaController.text.isEmpty) {
-      _erro('Preencha todos os campos.');
+    // 1. Validações visuais usando a sua Notificação customizada
+    if (_nomeController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _cpfController.text.isEmpty ||
+        _celularController.text.isEmpty ||
+        _senhaController.text.isEmpty ||
+        _confirmarSenhaController.text.isEmpty) {
+      Notificacao.erro(context, 'Preencha todos os campos antes de continuar.');
       return;
     }
+
     if (_senhaController.text != _confirmarSenhaController.text) {
-      _erro('As senhas não coincidem.');
+      Notificacao.erro(context, 'As senhas não coincidem. Verifique e tente novamente.');
+      return;
+    }
+
+    if (_senhaController.text.length < 6) {
+      Notificacao.erro(context, 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     setState(() => _carregando = true);
+
     try {
+      // 2. Chama o Firebase no backend (Exatamente como estava funcionando!)
       await AuthService.cadastrar(
         nome: _nomeController.text.trim(),
         email: _emailController.text.trim(),
@@ -50,33 +65,18 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
         celular: _celularController.text.trim(),
         senha: _senhaController.text,
       );
+
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cadastro realizado! Faça login.')));
+        Navigator.pop(context); // Fecha a gaveta
+        // 3. Sucesso usando a notificação bonitona ao invés do SnackBar padrão
+        Notificacao.sucesso(context, 'Conta criada com sucesso! Faça login para continuar.');
       }
     } catch (e) {
-      _erro(e.toString().replaceAll('Exception: ', ''));
+      // 4. Erros do Backend caindo direto na sua notificação elegante!
+      Notificacao.erro(context, e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
-  }
-
-  void _erro(String msg) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A2A4A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Atenção', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(msg, style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF1E90FF), fontSize: 16)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -94,7 +94,10 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
           const SizedBox(height: 12),
           Container(
             width: 60, height: 5,
-            decoration: BoxDecoration(color: Colors.white38, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: Colors.white38,
+                borderRadius: BorderRadius.circular(10)
+            ),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -102,7 +105,10 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
               padding: EdgeInsets.fromLTRB(32, 0, 32, bottomInset + 16),
               child: Column(
                 children: [
-                  const Text('Cadastro', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                  const Text(
+                      'Cadastro',
+                      style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)
+                  ),
                   const SizedBox(height: 8),
                   RichText(
                     textAlign: TextAlign.center,
@@ -137,7 +143,9 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
                       Future.delayed(const Duration(milliseconds: 300), () {
                         if (context.mounted) {
                           showModalBottomSheet(
-                            context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
                             builder: (_) => const GavetaLogin(),
                           );
                         }

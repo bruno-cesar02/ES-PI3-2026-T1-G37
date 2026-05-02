@@ -1,6 +1,6 @@
-import { getAuth } from "firebase-admin/auth";
-import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import {getAuth} from "firebase-admin/auth";
+import {getApps, initializeApp} from "firebase-admin/app";
+import {getFirestore} from "firebase-admin/firestore";
 
 // Checa se o Firebase já foi iniciado para não dar erro de duplicidade
 if (getApps().length === 0) {

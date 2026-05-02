@@ -17,7 +17,8 @@ class AuthService {
   }) async {
     try {
       // Chama a função pelo nome exato que está lá no backend TypeScript
-      final callable = FirebaseFunctions.instance.httpsCallable('createUser');
+      final callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1')
+          .httpsCallable('createUser');
 
       // Manda o pacote de dados. O SDK do Firebase já sabe o IP e a porta corretos
       // por causa daquela configuração do Emulador no main.dart!
