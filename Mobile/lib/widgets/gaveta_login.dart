@@ -27,7 +27,6 @@ class _GavetaLoginState extends State<GavetaLogin> {
       _erro('Preencha e-mail e senha.');
       return;
     }
-    
     _erro('Login ainda não implementado.');
   }
 
@@ -88,6 +87,34 @@ class _GavetaLoginState extends State<GavetaLogin> {
                   CampoTexto(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
                   const SizedBox(height: 12),
                   CampoTexto(label: 'Senha', controller: _senhaController, obscureText: true),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF1A2A4A),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              title: const Text('Em breve', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              content: const Text('A tela de recuperação de senha ainda será implementada.', style: TextStyle(color: Colors.white70)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('OK', style: TextStyle(color: Color(0xFF1E90FF), fontSize: 16)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      // 👇 isso está faltando
+                      child: const Text(
+                        'esqueceu a senha?',
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
                   const SizedBox(height: 28),
                   _carregando
                       ? const CircularProgressIndicator(color: Color(0xFF1E90FF))
