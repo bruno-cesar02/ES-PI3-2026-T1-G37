@@ -59,7 +59,11 @@ flutter:
   assets:
     - assets/images/bg_blur.png
     - assets/images/logo_mescla.png
-
+    - assets/images/search.png
+    - assets/images/wallet.png
+    - assets/images/user.png
+    - assets/images/home.png
+    - assets/images/bar-chart.png
 
 
 
