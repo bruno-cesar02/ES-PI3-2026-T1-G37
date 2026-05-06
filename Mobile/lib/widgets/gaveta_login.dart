@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
-import 'gaveta_cadastro.dart'; // Para poder trocar de tela
+import 'gaveta_cadastro.dart';
 
 class GavetaLogin extends StatefulWidget {
   const GavetaLogin({super.key});
@@ -53,6 +53,7 @@ class _GavetaLoginState extends State<GavetaLogin> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
+      // Ajusta a altura proporcionalmente ao teclado
       height: MediaQuery.of(context).size.height * 0.82 + bottomInset,
       decoration: BoxDecoration(
         color: const Color(0xFF1A2A4A).withOpacity(0.92),
@@ -90,31 +91,21 @@ class _GavetaLoginState extends State<GavetaLogin> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              backgroundColor: const Color(0xFF1A2A4A),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              title: const Text('Em breve', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              content: const Text('A tela de recuperação de senha ainda será implementada.', style: TextStyle(color: Colors.white70)),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('OK', style: TextStyle(color: Color(0xFF1E90FF), fontSize: 16)),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      // 👇 isso está faltando
+                      onPressed: () {
+                        final mainContext = Navigator.of(context);
+
+                        mainContext.pop(); 
+
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          mainContext.pushNamed('/esqueceu-senha');
+                        });
+                      },
                       child: const Text(
                         'esqueceu a senha?',
                         style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 28),
                   const SizedBox(height: 28),
                   _carregando
                       ? const CircularProgressIndicator(color: Color(0xFF1E90FF))
@@ -126,7 +117,9 @@ class _GavetaLoginState extends State<GavetaLogin> {
                       Future.delayed(const Duration(milliseconds: 300), () {
                         if (context.mounted) {
                           showModalBottomSheet(
-                            context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+                            context: context, 
+                            isScrollControlled: true, 
+                            backgroundColor: Colors.transparent,
                             builder: (_) => const GavetaCadastro(),
                           );
                         }

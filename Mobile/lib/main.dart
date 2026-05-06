@@ -36,11 +36,8 @@ class MesclaInvestApp extends StatelessWidget {
       ),
 
       // ── TELA INICIAL ────────────────────────────────────────────────
-      home: const TelaInicialScreen(),
-      initialRoute: '/esqueceu-senha',
-
+      initialRoute: '/',
       // ── ROTAS DO APLICATIVO ─────────────────────────────────────────
-      
       routes: {
         
       // ── Tela inicial ────────────────────────────────────────────────
@@ -52,6 +49,7 @@ class MesclaInvestApp extends StatelessWidget {
       // Para navegar: Navigator.pushNamed(context, '/cadastro')
       //
       // ADICIONE AQUI cada nova tela que você criar:
+        '/': (context) => const TelaInicialScreen(),
         '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
         '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
         '/esqueceu-senha': (context) => const ForgotPasswordScreen(),
