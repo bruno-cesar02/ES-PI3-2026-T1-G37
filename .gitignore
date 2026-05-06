@@ -59,4 +59,7 @@ Desktop.ini
 
 # Ignorar configuracoes de IDEs
 .idea/
+*.idea/
+*.idea
+.idea
 .vscode/
