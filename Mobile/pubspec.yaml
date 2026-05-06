@@ -34,14 +34,11 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-<<<<<<< HEAD
   http: ^1.2.0
   firebase_core: ^4.7.0
   cloud_firestore: ^6.3.0
   cloud_functions: ^6.2.0
   firebase_auth: ^6.4.0
-=======
->>>>>>> 8218a78 (feat: estruturacao do projeto e tela de esqueci senha finalizada)
 
 dev_dependencies:
   flutter_test:
@@ -60,13 +57,8 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-<<<<<<< HEAD
     - assets/images/bg_blur.png
     - assets/images/logo_mescla.png
-=======
-#    - assets/images/bg_blur.png
-#    - assets/images/logo_mescla.png
->>>>>>> 8218a78 (feat: estruturacao do projeto e tela de esqueci senha finalizada)
 
 
 
@@ -105,8 +97,4 @@ flutter:
   #         weight: 700
   #
   # For details regarding fonts from package dependencies,
-<<<<<<< HEAD
   # see https://flutter.dev/to/font-from-package
-=======
-  # see https://flutter.dev/to/font-from-package
->>>>>>> 8218a78 (feat: estruturacao do projeto e tela de esqueci senha finalizada)
