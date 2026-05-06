@@ -1,16 +1,15 @@
-/* Tomás Cubeiro RA: 24023817 */ 
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../widgets/botao_primario.dart';
 import '../widgets/campo_texto.dart';
 
-class ForgotPasswordScreen extends StatelessWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends StatelessWidget {
+  const ResetPasswordScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final altura = MediaQuery.of(context).size.height;
-    final TextEditingController emailController = TextEditingController();
+    final TextEditingController novaSenhaController = TextEditingController();
+    final TextEditingController confirmarSenhaController = TextEditingController();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -26,16 +25,13 @@ class ForgotPasswordScreen extends StatelessWidget {
               ),
             ),
           ),
-          
           Positioned.fill(
             child: Image.asset(
               'assets/images/bg_blur.png',
               fit: BoxFit.cover,
               opacity: const AlwaysStoppedAnimation(0.6),
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),
-          
           SafeArea(
             child: Column(
               children: [
@@ -43,9 +39,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                 Image.asset(
                   'assets/images/logo_mescla.png',
                   width: 234,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.error, color: Colors.white),
                 ),
-                
                 const Spacer(), 
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
@@ -69,8 +63,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 60,
-                            height: 4,
+                            width: 60, height: 4,
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(10),
@@ -79,34 +72,32 @@ class ForgotPasswordScreen extends StatelessWidget {
                           const SizedBox(height: 24),
                           const Text(
                             "Recuperar senha",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 32),
                           
                           CampoTexto(
-                            label: "Email",
-                            controller: emailController,
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          BotaoPrimario(
-                            texto: "Enviar",
-                            isPrimary: true,
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/redefinir-senha');
-                            },
+                            label: "Insira nova senha",
+                            controller: novaSenhaController,
+                            obscureText: true,
                           ),
                           
                           const SizedBox(height: 16),
+
+                          CampoTexto(
+                            label: "Confirmar senha",
+                            controller: confirmarSenhaController,
+                            obscureText: true,
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
                           BotaoPrimario(
-                            texto: "Voltar",
-                            isPrimary: false,
-                            onPressed: () => Navigator.pop(context),
+                            texto: "Recuperar",
+                            isPrimary: true,
+                            onPressed: () {
+                              print("Nova senha definida!");
+                            },
                           ),
                           const SizedBox(height: 16),
                         ],
