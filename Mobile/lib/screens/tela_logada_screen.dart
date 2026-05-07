@@ -5,6 +5,12 @@ RA: 24025832
 
 import 'package:flutter/material.dart';
 import 'package:mobile/screens/tela_inicial_screen.dart';
+import 'startup_details_page.dart';
+
+
+//import 'carteira_screen.dart';
+//import 'dashboard_screen.dart';
+//import 'perfil_screen.dart';
 
 
 class TelaLogadaScreen extends StatefulWidget{
@@ -16,18 +22,40 @@ class _TelaLogadaScreenState extends State<TelaLogadaScreen>{
 
   int _indice = 0;
 
+
+
+// Preencha o _telas[]
   final List<Widget> _telas = [
-    /*
-    Adicionar todas as telas aqui, tem que dar 4 certinho, se faltar alguma repita a tela
+    // Aba 0: Catálogo (Substituído temporariamente pelo seu botão de teste)
+    Builder(
+      builder: (context) => Center(
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const StartupDetailsPage(
+                  startupId: 'biochip-campus', // Puxando do Firebase
+                ),
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          ),
+          child: const Text('Testar Tela da Startup (BioChip)'),
+        ),
+      ),
+    ),
 
-    CASO NAO TIVER 4 TELAS AQUI, VAI DAR TELA VERMELHA EM ALGM MOMENTO
+    // Aba 1: Carteira (Mock temporário para não dar erro)
+    const Center(child: Text('Carteira - Em breve')),
 
-    const tela();
-    const tela();
-    const tela();
-    cont tela();
+    // Aba 2: Dashboard (Mock temporário para não dar erro)
+    const Center(child: Text('Dashboard - Em breve')),
 
-    */
+    // Aba 3: Perfil (Mock temporário para não dar erro)
+    const Center(child: Text('Perfil - Em breve')),
   ];
 
   @override

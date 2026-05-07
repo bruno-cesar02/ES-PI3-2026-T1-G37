@@ -2,6 +2,7 @@
    RA: 24795502 */
 
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/tela_logada_screen.dart';
 import 'config/firebase_setup.dart'; 
 import 'screens/tela_inicial_screen.dart';
 import 'screens/forgot_password_screen.dart';
@@ -50,7 +51,7 @@ class MesclaInvestApp extends StatelessWidget {
       // Para navegar: Navigator.pushNamed(context, '/cadastro')
       //
       // ADICIONE AQUI cada nova tela que você criar:
-        '/': (context) => const TelaInicialScreen(),
+        '/': (context) =>  TelaLogadaScreen(),
         '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
         '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
         '/esqueceu-senha': (context) => const ForgotPasswordScreen(),

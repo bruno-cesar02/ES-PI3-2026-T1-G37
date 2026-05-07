@@ -4,7 +4,7 @@ RA: 24025832
 */ 
 
 import {FieldValue} from "firebase-admin/firestore";
-import { StartupDocument, StartupListItem, StartupStages } from "../types";
+import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument } from "../types";
 import { db } from "../shared/firebase";
 
 const startupsCollection = db.collection("startups");
@@ -92,4 +92,48 @@ export async function seedDemoStartups() : Promise<string[]> {
   return demoStartups.map(s => s.id);
 }
 
+export async function createQuestion(
+  startupId: string,
+  question: StartupQuestionDocument
+): Promise<string> {
+  const questionRef = await startupsCollection
+    .doc(startupId)
+    .collection("questions")
+    .add(question);
+  return questionRef.id;
+}
+
+export async function userIsInvestor(
+  startupId: string,
+  uid: string
+): Promise<boolean> {
+  const investorSnapshot = await startupsCollection
+    .doc(startupId)
+    .collection("investors")
+    .doc(uid)
+    .get();
+
+  return investorSnapshot.exists;
+}
+
+export async function listPublicQuestions(startupId: string) {
+  const questionsSnapshot = await startupsCollection
+    .doc(startupId)
+    .collection("questions")
+    .where("visibility", "==", "publica")
+    .limit(50)
+    .get();
+
+  return questionsSnapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      text: doc.get("text"),
+      answer: doc.get("answer") ?? null,
+      answeredAt: doc.get("answeredAt")?.toDate?.()?.toISOString?.() ?? null,
+      createdAt: doc.get("createdAt")?.toDate?.()?.toISOString?.() ?? null,
+    }))
+    .sort((left, right) =>
+      String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? ""))
+    );
+}
 // Continuar com dados das sturtups sobre usuarios

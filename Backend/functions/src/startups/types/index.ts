@@ -74,8 +74,8 @@ export type StartupQuestionDocument = {
   text: string,
   visibility: QuestionVisibility,
   answer?: string,
-  answeredAt?: FieldValue,
-  createdAt: Timestamp,
+  answeredAt?: Timestamp,
+  createdAt: FieldValue,
 }
 
 
