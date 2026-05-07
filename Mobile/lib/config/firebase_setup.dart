@@ -9,7 +9,7 @@ import '../firebase_options.dart';
 
 class FirebaseSetup {
 
-  static const bool usarEmulador = false; // true para usar o emulador
+  static const bool usarEmulador = true; // true para usar o emulador
 
   static Future<void> inicializar() async {
 
