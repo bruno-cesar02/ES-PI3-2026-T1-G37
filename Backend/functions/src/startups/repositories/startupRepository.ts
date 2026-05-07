@@ -1,7 +1,7 @@
 /*
 Nome: Otávio Augusto Antunes Marquez
 RA: 24025832
-*/ 
+*/
 
 import {FieldValue} from "firebase-admin/firestore";
 import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument } from "../types";
@@ -25,21 +25,21 @@ const demoStartups : Array<StartupDocument & {id: string}> = [
         name: "Alice Silva",
         role: "CEO",
         equityPercentage: 40,
-        bio: "Alice é uma empreendedora experiente com um histórico de sucesso em startups de tecnologia. Ela é apaixonada por inovação e tem uma visão clara para o futuro da TechNova."
+        bio: "Alice é uma empreendedora experiente com um histórico de sucesso em startups de tecnologia. Ela é apaixonada por inovação e tem uma visão clara para o futuro da TechNova.",
       },
       {
         name: "Bruno Costa",
         role: "CTO",
         equityPercentage: 30,
-        bio: "Bruno é um especialista em tecnologia com mais de 15 anos de experiência em desenvolvimento de software e inteligência artificial. Ele lidera a equipe técnica da TechNova, garantindo que as soluções oferecidas sejam de alta qualidade e inovadoras."
-      }
+        bio: "Bruno é um especialista em tecnologia com mais de 15 anos de experiência em desenvolvimento de software e inteligência artificial. Ele lidera a equipe técnica da TechNova, garantindo que as soluções oferecidas sejam de alta qualidade e inovadoras.",
+      },
     ],
     externalMembers: [
       {
         name: "Carla Mendes",
         role: "Conselheira",
-        organization: "Tech Advisors Inc."
-      }
+        organization: "Tech Advisors Inc.",
+      },
     ],
     demoVideos: ["https://www.youtube.com/watch?v=demo1"],
     pitchDeckUrl: "https://www.slideshare.net/demo1",
@@ -59,13 +59,13 @@ function toListItem(id: string, startup: StartupDocument): StartupListItem {
     currentTokenPriceCents: startup.currentTokenPriceCents,
     coverImageUrl: startup.coverImageUrl,
     tags: startup.tags,
-  }
+  };
 }
 
 export async function listStartupsItems(): Promise<StartupListItem[]> {
   const snapshot = await startupsCollection.limit(100).get();
 
-  return snapshot.docs.map(doc => toListItem(doc.id, doc.data() as StartupDocument));
+  return snapshot.docs.map((doc) => toListItem(doc.id, doc.data() as StartupDocument));
 }
 
 export async function getStartupById(startupId: string): Promise<StartupDocument | undefined> {
@@ -81,15 +81,15 @@ export async function getStartupById(startupId: string): Promise<StartupDocument
 export async function seedDemoStartups() : Promise<string[]> {
   const batch = db.batch();
 
-  demoStartups.forEach(startup => {
+  demoStartups.forEach((startup) => {
     const {id, ...data} = startup;
     const startupRef = startupsCollection.doc(id);
     batch.set(startupRef, {...data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp()});
-  }, {merge:true});
+  }, {merge: true});
 
   await batch.commit();
 
-  return demoStartups.map(s => s.id);
+  return demoStartups.map((s) => s.id);
 }
 
 export async function createQuestion(
@@ -137,3 +137,4 @@ export async function listPublicQuestions(startupId: string) {
     );
 }
 // Continuar com dados das sturtups sobre usuarios
+

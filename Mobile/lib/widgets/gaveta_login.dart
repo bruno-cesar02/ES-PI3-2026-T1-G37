@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/services/logar_service.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
-import 'gaveta_cadastro.dart';
+import 'gaveta_cadastro.dart'; // Para poder trocar de tela
+import 'notificacao.dart';
 
 class GavetaLogin extends StatefulWidget {
   const GavetaLogin({super.key});
@@ -24,28 +26,37 @@ class _GavetaLoginState extends State<GavetaLogin> {
 
   Future<void> _enviarLogin() async {
     if (_emailController.text.isEmpty || _senhaController.text.isEmpty) {
-      _erro('Preencha e-mail e senha.');
+      Notificacao.erro(context, 'Preencha e-mail e senha.');
       return;
     }
-    _erro('Login ainda não implementado.');
-  }
+    setState(() {
+      _carregando = true;
+    });
 
-  void _erro(String msg) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A2A4A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Atenção', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(msg, style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF1E90FF), fontSize: 16)),
-          ),
-        ],
-      ),
-    );
+    try {
+      final sucesso = await LogarService.logar(
+        email: _emailController.text.trim(),
+        senha: _senhaController.text,
+      );
+
+      if (sucesso) {
+        if (mounted) {
+          Notificacao.sucesso(context, 'Login realizado com sucesso!');
+          Navigator.pop(context);
+          //Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Notificacao.erro(context, e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+        });
+      }
+    }
   }
 
   @override

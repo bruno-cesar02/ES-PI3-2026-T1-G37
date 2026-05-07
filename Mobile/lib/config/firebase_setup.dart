@@ -9,7 +9,7 @@ import '../firebase_options.dart';
 
 class FirebaseSetup {
 
-  static const bool usarEmulador = false; // true para usar o emulador
+  static const bool usarEmulador = true; // true para usar o emulador
 
   static Future<void> inicializar() async {
 
@@ -31,7 +31,9 @@ class FirebaseSetup {
 
       FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
       await FirebaseAuth.instance.useAuthEmulator(host, 9099);
-      FirebaseFunctions.instance.useFunctionsEmulator(host, 5001);
+
+      FirebaseFunctions.instanceFor(region: 'southamerica-east1')
+          .useFunctionsEmulator(host, 5001);
 
       print('✅ MODO DEV: Conectado ao Emulador Local!');
     } catch (e) {

@@ -4,6 +4,7 @@ RA: 24025832
 */
 
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/catalogo_screen.dart';
 import 'package:mobile/screens/tela_inicial_screen.dart';
 import 'startup_details_page.dart';
 
