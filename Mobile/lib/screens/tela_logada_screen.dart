@@ -4,6 +4,7 @@ RA: 24025832
 */
 
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/catalogo_screen.dart';
 import 'package:mobile/screens/tela_inicial_screen.dart';
 
 
@@ -17,6 +18,10 @@ class _TelaLogadaScreenState extends State<TelaLogadaScreen>{
   int _indice = 0;
 
   final List<Widget> _telas = [
+    const CatalogoScreen(),
+    const TelaInicialScreen(),
+    const TelaInicialScreen(),
+    const TelaInicialScreen()
     /*
     Adicionar todas as telas aqui, tem que dar 4 certinho, se faltar alguma repita a tela
 
