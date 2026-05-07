@@ -13,6 +13,7 @@ class FirebaseSetup {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
+
     if (usarEmulador) {
       await _conectarEmulador();
     }
