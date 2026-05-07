@@ -10,7 +10,9 @@ class StartupService {
   Future<StartupDetailsResult> getStartupDetails(String startupId) async {
     final callable = _functions.httpsCallable('getStartupDetails');
     final result = await callable.call({'id': startupId});
-    final data = Map<String, dynamic>.from(result.data as Map);
+    final raw = Map<String, dynamic>.from(result.data as Map);
+    final data = Map<String, dynamic>.from(raw['data'] as Map);
+    print('DADOS RECEBIDOS: $data'); // ← adiciona isso
     return _mapToResult(data);
   }
 
@@ -62,12 +64,16 @@ StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
   final coverImageUrl = data['coverImageUrl'] as String?;
   final tags = (data['tags'] as List? ?? []).map((t) => t.toString()).toList();
 
-  final socios = (data['founders'] as List? ?? []).map((f) {
+
+  final listaSocios = data['founder'] ?? data['founders'] ?? [];
+
+  final socios = (listaSocios as List).map((f) {
     final founder = Map<String, dynamic>.from(f as Map);
     return Socio(
       nome: founder['name'] as String? ?? '',
       cargo: founder['role'] as String? ?? '',
-      percentual: (founder['equityPercent'] as num? ?? 0).toInt(),
+      // Busca por 'equityPercentage' ou 'equityPercent'
+      percentual: (founder['equityPercentage'] as num? ?? founder['equityPercent'] as num? ?? 0).toInt(),
       descricao: founder['bio'] as String? ?? '',
       avatar: _initials(founder['name'] as String? ?? ''),
     );

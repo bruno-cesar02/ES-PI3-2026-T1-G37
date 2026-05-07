@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/tela_logada_screen.dart';
 import 'package:mobile/services/logar_service.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
-import 'gaveta_cadastro.dart'; // Para poder trocar de tela
+import 'gaveta_cadastro.dart';
 import 'notificacao.dart';
 
 class GavetaLogin extends StatefulWidget {
@@ -29,9 +30,8 @@ class _GavetaLoginState extends State<GavetaLogin> {
       Notificacao.erro(context, 'Preencha e-mail e senha.');
       return;
     }
-    setState(() {
-      _carregando = true;
-    });
+
+    setState(() => _carregando = true);
 
     try {
       final sucesso = await LogarService.logar(
@@ -39,23 +39,20 @@ class _GavetaLoginState extends State<GavetaLogin> {
         senha: _senhaController.text,
       );
 
-      if (sucesso) {
-        if (mounted) {
-          Notificacao.sucesso(context, 'Login realizado com sucesso!');
-          Navigator.pop(context);
-          //Navigator.pushReplacementNamed(context, '/dashboard');
-        }
+      if (sucesso && mounted) {
+        // Fecha a gaveta e vai para a tela logada
+        // pushAndRemoveUntil garante que não sobra nada na pilha de navegação
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => TelaLogadaScreen()),
+              (_) => false,
+        );
       }
     } catch (e) {
       if (mounted) {
         Notificacao.erro(context, e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _carregando = false;
-        });
-      }
+      if (mounted) setState(() => _carregando = false);
     }
   }
 
@@ -64,7 +61,6 @@ class _GavetaLoginState extends State<GavetaLogin> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      // Ajusta a altura proporcionalmente ao teclado
       height: MediaQuery.of(context).size.height * 0.82 + bottomInset,
       decoration: BoxDecoration(
         color: const Color(0xFF1A2A4A).withOpacity(0.92),
@@ -103,18 +99,13 @@ class _GavetaLoginState extends State<GavetaLogin> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        final mainContext = Navigator.of(context);
-
-                        mainContext.pop(); 
-
+                        final nav = Navigator.of(context);
+                        nav.pop();
                         Future.delayed(const Duration(milliseconds: 300), () {
-                          mainContext.pushNamed('/esqueceu-senha');
+                          nav.pushNamed('/esqueceu-senha');
                         });
                       },
-                      child: const Text(
-                        'esqueceu a senha?',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
+                      child: const Text('esqueceu a senha?', style: TextStyle(color: Colors.white70, fontSize: 13)),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -128,8 +119,8 @@ class _GavetaLoginState extends State<GavetaLogin> {
                       Future.delayed(const Duration(milliseconds: 300), () {
                         if (context.mounted) {
                           showModalBottomSheet(
-                            context: context, 
-                            isScrollControlled: true, 
+                            context: context,
+                            isScrollControlled: true,
                             backgroundColor: Colors.transparent,
                             builder: (_) => const GavetaCadastro(),
                           );

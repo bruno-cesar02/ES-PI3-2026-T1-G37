@@ -1,19 +1,17 @@
 /* Bruno César Gonçalves Lima Mota
    RA: 24795502 */
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile/screens/tela_logada_screen.dart';
-import 'config/firebase_setup.dart'; 
+import 'config/firebase_setup.dart';
 import 'screens/tela_inicial_screen.dart';
+import 'screens/tela_logada_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/reset_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // ── Chama a configuração do banco de dados 
   await FirebaseSetup.inicializar();
-
   runApp(const MesclaInvestApp());
 }
 
@@ -25,8 +23,6 @@ class MesclaInvestApp extends StatelessWidget {
     return MaterialApp(
       title: 'MesclaInvest',
       debugShowCheckedModeBanner: false,
-
-      // ── TEMA GLOBAL DO APP ──────────────────────────────────────────
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
@@ -37,26 +33,17 @@ class MesclaInvestApp extends StatelessWidget {
         fontFamily: 'SF Pro',
       ),
 
-      // ── TELA INICIAL ────────────────────────────────────────────────
-      initialRoute: '/',
-      // ── ROTAS DO APLICATIVO ─────────────────────────────────────────
-      routes: {
-        
-      // ── Tela inicial ────────────────────────────────────────────────
-      // É aqui que você define qual tela aparece primeiro.
-      // home: const TelaInicialScreen(),
+      // ── Verifica se o usuário já está logado ──────────────────────────────
+      // Se sim → vai direto para o catálogo
+      // Se não → vai para a tela inicial (login/cadastro)
+      home: FirebaseAuth.instance.currentUser != null
+          ? const TelaLogadaScreen()
+          : const TelaInicialScreen(),
 
-      // ── Rotas nomeadas ──────────────────────────────────────────────
-      // Funciona como um mapa de endereços do app.
-      // Para navegar: Navigator.pushNamed(context, '/cadastro')
-      //
-      // ADICIONE AQUI cada nova tela que você criar:
-        '/': (context) =>  TelaLogadaScreen(),
-        '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
-        '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
+      routes: {
         '/esqueceu-senha': (context) => const ForgotPasswordScreen(),
         '/redefinir-senha': (context) => const ResetPasswordScreen(),
-      },  
+      },
     );
   }
 }
