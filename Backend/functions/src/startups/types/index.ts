@@ -8,7 +8,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 export type AuthenticatedUser = {
   uid: string,
   email?: string,
-};
+}
 
 export enum StartupStages {
   NOVA = "nova",
@@ -77,5 +77,3 @@ export type StartupQuestionDocument = {
   answeredAt?: FieldValue,
   createdAt: Timestamp,
 }
-
-

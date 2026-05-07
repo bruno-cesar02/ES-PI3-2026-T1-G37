@@ -1,23 +1,23 @@
 /*
 Nome: Otávio Augusto Antunes Marquez
 RA: 24025832
-*/ 
+*/
 
-import { HttpsError, onCall } from "firebase-functions/https";
-import { normalizeString } from "../shared/validation";
+import {HttpsError, onCall} from "firebase-functions/https";
+import {normalizeString} from "../shared/validation";
 import {listStartupsItems} from "../repositories/startupRepository";
-import { StartupStages} from "../types";
-import { requireAuthenticatedUser } from "../shared/auth";
+import {StartupStages} from "../types";
 
 export const listStartups = onCall(async (req) => {
+  //requireAuthenticatedUser(req);
 
-  requireAuthenticatedUser(req);    
+  const stage = normalizeString(req.data?.stage);
 
-  const stage = normalizeString(req.data?.stage ?? "");
+  const search = normalizeString(req.data?.search)
+    ?.toLocaleLowerCase("pt-BR");
 
-  const search = normalizeString(req.data?.search ?? "")?.toLocaleLowerCase("pt-BR");
-
-  if (stage && !StartupStages[stage.toUpperCase() as keyof typeof StartupStages]) {
+  if (stage &&
+    !StartupStages[stage.toUpperCase() as keyof typeof StartupStages]) {
     throw new HttpsError("invalid-argument", "Invalid stage provided");
   }
 
@@ -36,7 +36,7 @@ export const listStartups = onCall(async (req) => {
       return searchable.includes(search);
     })
     .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"));
-    
+
   console.log(startups);
 
   return {
@@ -50,4 +50,4 @@ export const listStartups = onCall(async (req) => {
   };
 });
 
-  
+
