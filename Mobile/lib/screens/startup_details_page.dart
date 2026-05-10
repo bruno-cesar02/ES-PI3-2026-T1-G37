@@ -1,38 +1,29 @@
 import 'package:flutter/material.dart';
 import '../models/startup_model.dart';
 import '../services/startup_service.dart';
-import '../theme/app_colors.dart';
-import '../widgets/notificacao.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════
+const _bgDark        = Color(0xFF020C14);
+const _primaryBlue   = Color(0xFF386BF6);
+const _primaryDark   = Color(0xFF2558D4);
+const _green         = Color(0xFF00AE51);
+const _red           = Color(0xFFEF4444);
+const _amber         = Color(0xFFF59E0B);
+const _purple        = Color(0xFFA855F7);
+const _textPrimary   = Color(0xFF020C14);
+const _textSecondary = Color(0xFF555555);
+const _cardBg        = Color(0xFFFAFAFA);
+const _cardBorder    = Color(0xFFF0F0F0);
+const _iconInactive  = Color(0xFF9DB2CE);
+
+// ═══════════════════════════════════════════════════════════════════════════
 // STARTUP DETAILS PAGE
-//
-// Aceita dois modos de uso:
-//
-// 1. Com dados locais (mock/catálogo):
-//    StartupDetailsPage(startup: startupObj)
-//
-// 2. Buscando do Firebase pelo ID:
-//    StartupDetailsPage(startupId: 'biochip-campus', idToken: token)
-//
-// Quando `startup` é passado, ele é exibido imediatamente.
-// Quando só `startupId` é passado, o service é chamado e exibe loading.
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
 class StartupDetailsPage extends StatefulWidget {
-  /// Startup já carregada (mock ou catálogo local)
-  final Startup? startup;
-
-  /// ID para buscar no Firebase
-  final String? startupId;
-
-  const StartupDetailsPage({
-    super.key,
-    this.startup,
-    this.startupId,
-  }) : assert(
-  startup != null || startupId != null,
-  'Informe startup ou startupId',
-  );
+  final String startupId;
+  const StartupDetailsPage({super.key, required this.startupId});
 
   @override
   State<StartupDetailsPage> createState() => _StartupDetailsPageState();
@@ -40,44 +31,39 @@ class StartupDetailsPage extends StatefulWidget {
 
 class _StartupDetailsPageState extends State<StartupDetailsPage>
     with SingleTickerProviderStateMixin {
+
+  // ── Controlador das abas ─────────────────────────────────────────────────
   late final TabController _tabController;
 
-  // Estado da tela
-  Startup? _startup;
-  bool _loading = false;
-  String? _error;
+  // ── Estado da página ─────────────────────────────────────────────────────
+  Startup?  _startup;
+  bool      _loading = false;
+  String?   _error;
 
-  // access flags vindos do Firebase (getStartupDetails → access)
-  bool _isInvestor = false;
-  bool _canTradeTokens = false;
-  bool _canSendPrivateQuestions = false;
+  // ── Dados extras do Firebase ──────────────────────────────────────────────
+  bool         _isInvestor              = false;
+  bool         _canTradeTokens          = false;
+  bool         _canSendPrivateQuestions = false;
+  List<String> _demoVideos             = [];
+  String?      _pitchDeckUrl;
+  String?      _coverImageUrl;
+  List<String> _tags                   = [];
 
-  // vídeos e pitchDeckUrl vindos diretamente do Firebase
-  List<String> _demoVideos = [];
-  String? _pitchDeckUrl;
-  String? _coverImageUrl;
-
-  // tags da startup
-  List<String> _tags = [];
-
-  final List<({IconData icon, String label})> _tabs = const [
-    (icon: Icons.info_outline_rounded, label: 'Geral'),
-    (icon: Icons.monetization_on_outlined, label: 'Financeiro'),
-    (icon: Icons.people_outline_rounded, label: 'Sócios'),
-    (icon: Icons.chat_bubble_outline_rounded, label: 'Perguntas'),
-    (icon: Icons.play_circle_outline_rounded, label: 'Mídia'),
+  // ── Abas ─────────────────────────────────────────────────────────────────
+  static const _tabLabels = ['Geral', 'Financeiro', 'Sócios', 'Perguntas', 'Mídia'];
+  static const _tabIcons  = [
+    Icons.info_outline_rounded,
+    Icons.attach_money_rounded,
+    Icons.people_outline_rounded,
+    Icons.chat_bubble_outline_rounded,
+    Icons.play_circle_outline_rounded,
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-
-    if (widget.startup != null) {
-      _startup = widget.startup;
-    } else {
-      _fetchFromFirebase();
-    }
+    _tabController = TabController(length: 5, vsync: this);
+    _buscarDados();
   }
 
   @override
@@ -86,30 +72,21 @@ class _StartupDetailsPageState extends State<StartupDetailsPage>
     super.dispose();
   }
 
-  Future<void> _fetchFromFirebase() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
+  // ── Busca no Firebase ─────────────────────────────────────────────────────
+  Future<void> _buscarDados() async {
+    setState(() { _loading = true; _error = null; });
     try {
-      // getStartupDetails retorna um StartupDetailsResult com startup + campos extras
-      final result = await StartupService.instance.getStartupDetails(
-        widget.startupId!,
-      );
-
-      if (mounted) {
-        setState(() {
-          _startup = result.startup;
-          _isInvestor = result.isInvestor;
-          _canTradeTokens = result.canTradeTokens;
-          _canSendPrivateQuestions = result.canSendPrivateQuestions;
-          _demoVideos = result.demoVideos;
-          _pitchDeckUrl = result.pitchDeckUrl;
-          _coverImageUrl = result.coverImageUrl;
-          _tags = result.tags;
-        });
-      }
+      final r = await StartupService.instance.getStartupDetails(widget.startupId);
+      if (mounted) setState(() {
+        _startup                  = r.startup;
+        _isInvestor               = r.isInvestor;
+        _canTradeTokens           = r.canTradeTokens;
+        _canSendPrivateQuestions  = r.canSendPrivateQuestions;
+        _demoVideos               = r.demoVideos;
+        _pitchDeckUrl             = r.pitchDeckUrl;
+        _coverImageUrl            = r.coverImageUrl;
+        _tags                     = r.tags;
+      });
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -117,768 +94,334 @@ class _StartupDetailsPageState extends State<StartupDetailsPage>
     }
   }
 
-  // ─── Build ───────────────────────────────────────────────────────────────
+  // ── Badge color por stage ─────────────────────────────────────────────────
+  Color _stageColor(String setor) {
+    if (setor.contains('Operação')) return _primaryBlue;
+    if (setor.contains('Expansão')) return _amber;
+    return _purple;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // ── Header sempre visível (com ou sem dados) ─────────────────────
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Botão voltar
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.chevron_left_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Header com dados ou skeleton
-                  _loading
-                      ? const _HeaderSkeleton()
-                      : _error != null
-                      ? _HeaderError(onRetry: _fetchFromFirebase)
-                      : _startup != null
-                      ? _HeaderContent(
-                    startup: _startup!,
-                    tags: _tags,
-                    coverImageUrl: _coverImageUrl,
-                  )
-                      : const SizedBox.shrink(),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Bottom sheet branca ──────────────────────────────────────────
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child: _loading || _error != null || _startup == null
-                  ? _loading
-                  ? const _ContentSkeleton()
-                  : _error != null
-                  ? _ErrorBody(
-                message: _error!,
-                onRetry: _fetchFromFirebase,
-              )
-                  : const SizedBox.shrink()
-                  : Column(
-                children: [
-                  // Drag indicator
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10, bottom: 4),
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-
-                  // Tab bar
-                  TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    padding: EdgeInsets.zero,
-                    labelPadding:
-                    const EdgeInsets.symmetric(horizontal: 12),
-                    indicatorColor: AppColors.primary,
-                    indicatorWeight: 2,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: Colors.grey[400],
-                    dividerColor: Colors.grey[100],
-                    tabs: _tabs
-                        .map(
-                          (t) => Tab(
-                        height: 52,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(t.icon, size: 16),
-                            const SizedBox(height: 3),
-                            Text(
-                              t.label,
-                              style:
-                              const TextStyle(fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                        .toList(),
-                  ),
-
-                  // Conteúdo das tabs
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _GeralTab(startup: _startup!),
-                        _FinanceiroTab(
-                          startup: _startup!,
-                          isInvestor: _isInvestor,
-                          canTradeTokens: _canTradeTokens,
-                        ),
-                        _SociosTab(startup: _startup!),
-                        _PerguntasTab(
-                          startup: _startup!,
-                          canSendPrivateQuestions: _canSendPrivateQuestions,
-                          onRefresh: _fetchFromFirebase, // Adiciona esta linha
-                        ),
-                        _MidiaTab(
-                          startup: _startup!,
-                          demoVideos: _demoVideos,
-                          pitchDeckUrl: _pitchDeckUrl,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-
-        ],
-      ),
+      backgroundColor: _bgDark,
+      body: Column(children: [
+        _buildHeader(),
+        _buildWhiteSheet(),
+      ]),
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HEADER WIDGETS
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _HeaderContent extends StatelessWidget {
-  final Startup s;
-  final List<String> tags;
-  final String? coverImageUrl;
-
-  const _HeaderContent({
-    required Startup startup,
-    required this.tags,
-    required this.coverImageUrl,
-  }) : s = startup;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Logo: tenta coverImageUrl (Firebase), fallback para asset local,
-            // fallback para iniciais
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: _StartupLogo(
-                networkUrl: coverImageUrl,
-                assetPath: s.logoAsset,
-                initials: s.nome.length >= 2
-                    ? s.nome.substring(0, 2).toUpperCase()
-                    : s.nome.toUpperCase(),
-                size: 70,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      s.nome,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          s.status,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 6),
-                          child: Text(
-                            '•',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.3),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          s.variacao,
-                          style: TextStyle(
-                            color: s.variacaoPositiva
-                                ? AppColors.positive
-                                : AppColors.negative,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // Badge do setor (stage do Firebase) + código da startup
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: AppColors.primary.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            s.setor,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '#${s.codigo}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // shortDescription do Firebase
-        Text(
-          s.descricaoBreve,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.75),
-            fontSize: 14,
-            fontWeight: FontWeight.w300,
-            height: 1.5,
-          ),
-        ),
-
-        // Tags vindas do Firebase (tags: string[])
-        if (tags.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: tags
-                .map(
-                  (tag) => Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: Colors.white.withOpacity(0.15)),
-                ),
-                child: Text(
-                  '#$tag',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            )
-                .toList(),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// Skeleton do header enquanto carrega
-class _HeaderSkeleton extends StatelessWidget {
-  const _HeaderSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            _Shimmer(width: 70, height: 70, radius: 16),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Shimmer(width: 160, height: 22, radius: 6),
-                  const SizedBox(height: 8),
-                  _Shimmer(width: 100, height: 14, radius: 6),
-                  const SizedBox(height: 8),
-                  _Shimmer(width: 80, height: 22, radius: 20),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _Shimmer(width: double.infinity, height: 14, radius: 6),
-        const SizedBox(height: 6),
-        _Shimmer(width: 240, height: 14, radius: 6),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _Shimmer(width: 60, height: 22, radius: 20),
-            const SizedBox(width: 6),
-            _Shimmer(width: 70, height: 22, radius: 20),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _HeaderError extends StatelessWidget {
-  final VoidCallback onRetry;
-  const _HeaderError({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.wifi_off_rounded, color: Colors.white54, size: 20),
-        const SizedBox(width: 8),
-        const Text(
-          'Erro ao carregar startup',
-          style: TextStyle(color: Colors.white54, fontSize: 14),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: onRetry,
-          child: const Text('Tentar novamente',
-              style: TextStyle(color: AppColors.primary, fontSize: 13)),
-        ),
-      ],
-    );
-  }
-}
-
-class _ErrorBody extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorBody({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
+  // ═══════════════════════════════════════════════════════════════════════════
+  // [2] HEADER ESCURO
+  // ═══════════════════════════════════════════════════════════════════════════
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                color: Colors.grey, size: 48),
-            const SizedBox(height: 12),
-            const Text(
-              'Não foi possível carregar os dados',
-              style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+          // [2.1] Back button
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 20),
             ),
+          ),
+
+          const SizedBox(height: 12),
+
+          if (_loading)
+            const _HeaderSkeleton()
+          else if (_error != null)
+            _HeaderErro(onRetry: _buscarDados)
+          else if (_startup != null)
+              _buildHeaderContent(_startup!),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildHeaderContent(Startup s) {
+    final statusText = s.status.startsWith('*') ? s.status.substring(1) : s.status;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+      // [2.2] Row: Avatar + Info
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // Avatar
+        Container(
+          width: 68, height: 68,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [_primaryBlue, Color(0xFF1A3A8F)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(child: Text(
+            _initials(s.nome),
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+          )),
+        ),
+
+        const SizedBox(width: 16),
+
+        // Info column
+        Expanded(child: Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+            // Nome
+            Text(s.nome, style: const TextStyle(
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, height: 1.2,
+            )),
+
+            const SizedBox(height: 2),
+
+            // Status • variação
+            Row(children: [
+              Text(statusText, style: TextStyle(
+                color: Colors.white.withOpacity(0.6), fontSize: 13,
+              )),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text('•', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+              ),
+              Text(s.variacao, style: TextStyle(
+                color: s.variacaoPositiva ? _green : _red,
+                fontSize: 13, fontWeight: FontWeight.w700,
+              )),
+            ]),
+
             const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Tentar novamente'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-/// Skeleton do conteúdo (bottom sheet)
-class _ContentSkeleton extends StatelessWidget {
-  const _ContentSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
-          // Tab bar fake
-          Row(
-            children: List.generate(
-              5,
-                  (_) => Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: _Shimmer(width: 48, height: 40, radius: 6),
+            // Badges: stage + código
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _stageColor(s.setor),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(s.setor, style: const TextStyle(
+                  color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600,
+                )),
               ),
-            ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text('#${s.codigo}', style: TextStyle(
+                  color: Colors.white.withOpacity(0.6), fontSize: 11,
+                )),
+              ),
+            ]),
+          ]),
+        )),
+      ]),
+
+      // [2.3] Descrição breve
+      if (s.descricaoBreve.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Text(s.descricaoBreve, style: TextStyle(
+          color: Colors.white.withOpacity(0.75),
+          fontSize: 13, height: 1.55, fontWeight: FontWeight.w300,
+        )),
+      ],
+
+      // [2.4] Hashtags
+      if (_tags.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          ...(_tags.isNotEmpty ? _tags : [s.setor, 'tokens', 'investimento']).map((tag) =>
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('#$tag', style: TextStyle(
+                  color: Colors.white.withOpacity(0.55), fontSize: 11,
+                )),
+              ),
           ),
-          const SizedBox(height: 20),
-          _Shimmer(width: double.infinity, height: 100, radius: 16),
-          const SizedBox(height: 12),
-          _Shimmer(width: double.infinity, height: 80, radius: 16),
-          const SizedBox(height: 12),
-          _Shimmer(width: double.infinity, height: 80, radius: 16),
-        ],
-      ),
-    );
+        ]),
+      ],
+    ]);
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SHIMMER (placeholder animado)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _Shimmer extends StatelessWidget {
-  final double width;
-  final double height;
-  final double radius;
-
-  const _Shimmer({
-    required this.width,
-    required this.height,
-    required this.radius,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(radius),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LOGO DA STARTUP
-// Tenta: 1) coverImageUrl (Firebase network), 2) asset local, 3) iniciais
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _StartupLogo extends StatelessWidget {
-  final String? networkUrl;
-  final String assetPath;
-  final String initials;
-  final double size;
-
-  const _StartupLogo({
-    required this.networkUrl,
-    required this.assetPath,
-    required this.initials,
-    required this.size,
-  });
-
-  Widget _fallback() => Container(
-    width: size,
-    height: size,
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppColors.primary, AppColors.background],
-      ),
-    ),
-    child: Center(
-      child: Text(
-        initials,
-        style: TextStyle(
+  // ═══════════════════════════════════════════════════════════════════════════
+  // [3] WHITE BOTTOM SHEET
+  // ═══════════════════════════════════════════════════════════════════════════
+  Widget _buildWhiteSheet() {
+    return Expanded(
+      child: Container(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          fontSize: size * 0.28,
-          fontWeight: FontWeight.w700,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
-      ),
-    ),
-  );
+        child: _loading
+            ? const _ContentSkeleton()
+            : _error != null
+            ? _TelaErro(mensagem: _error!, onRetry: _buscarDados)
+            : _startup == null
+            ? const SizedBox.shrink()
+            : Column(children: [
 
-  @override
-  Widget build(BuildContext context) {
-    // 1. Tenta imagem de rede (coverImageUrl do Firebase)
-    if (networkUrl != null && networkUrl!.isNotEmpty) {
-      return Image.network(
-        networkUrl!,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallback(),
-      );
-    }
-
-    // 2. Tenta asset local
-    return Image.asset(
-      assetPath,
-      width: size,
-      height: size,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _fallback(),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS COMPARTILHADOS ENTRE AS TABS
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SectionCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsets? padding;
-
-  const _SectionCard({required this.child, this.padding});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+          // [3.1] Drag pill
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD9D9D9),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
           ),
-        ],
+
+          // [3.2] Tab bar
+          _buildTabBar(),
+
+          // [3.3] Conteúdo
+          Expanded(child: TabBarView(
+            controller: _tabController,
+            children: [
+              _AbaGeral(startup: _startup!),
+              _AbaFinanceiro(
+                startup: _startup!,
+                isInvestor: _isInvestor,
+                canTradeTokens: _canTradeTokens,
+              ),
+              _AbaSocios(startup: _startup!),
+              _AbaPerguntas(
+                startup: _startup!,
+                canSendPrivateQuestions: _canSendPrivateQuestions,
+                service: StartupService.instance,
+              ),
+              _AbaMidia(
+                startup: _startup!,
+                demoVideos: _demoVideos,
+                pitchDeckUrl: _pitchDeckUrl,
+              ),
+            ],
+          )),
+        ]),
       ),
-      child: child,
     );
   }
-}
 
-class _AvatarCircle extends StatelessWidget {
-  final String initials;
-  final double size;
-  final bool muted;
-
-  const _AvatarCircle({
-    required this.initials,
-    this.size = 44,
-    this.muted = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildTabBar() {
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: muted
-            ? const LinearGradient(
-          colors: [Color(0xFF9DB2CE), Color(0xFF6B8FA8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        )
-            : const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.background],
-        ),
-        shape: BoxShape.circle,
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: _cardBorder, width: 1)),
       ),
-      child: Center(
-        child: Text(
-          initials,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size * 0.3,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: false,
+        padding: EdgeInsets.zero,
+        labelPadding: EdgeInsets.zero,
+        indicatorColor: _primaryBlue,
+        indicatorWeight: 2,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelColor: _primaryBlue,
+        unselectedLabelColor: const Color(0xFFAAAAAA),
+        dividerColor: Colors.transparent,
+        tabs: List.generate(5, (i) => Tab(
+          height: 52,
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(_tabIcons[i], size: 15),
+            const SizedBox(height: 3),
+            Text(_tabLabels[i], style: const TextStyle(fontSize: 11)),
+          ]),
+        )),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TAB: GERAL
-// Exibe: seções geral (executiveSummary + description do Firebase),
-//        card de preço do token
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _GeralTab extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA: GERAL
+// ═══════════════════════════════════════════════════════════════════════════
+class _AbaGeral extends StatelessWidget {
   final Startup startup;
-  const _GeralTab({required this.startup});
+  const _AbaGeral({required this.startup});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Seções: montadas em startup_service.dart a partir de
-        // executiveSummary e description do Firebase
-        ...startup.geral.map(
-              (secao) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _SectionCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    secao.titulo,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    secao.conteudo,
-                    style: const TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 13,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
 
-        // Mensagem quando Firebase não retornou nenhuma seção
+        // Seções textuais
+        ...startup.geral.map((s) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _Card(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.titulo, style: const TextStyle(
+                color: _textPrimary, fontSize: 15, fontWeight: FontWeight.w700,
+              )),
+              const SizedBox(height: 8),
+              Text(s.conteudo, style: const TextStyle(
+                color: _textSecondary, fontSize: 13, height: 1.6,
+              )),
+            ],
+          )),
+        )),
+
         if (startup.geral.isEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _SectionCard(
-              child: Column(
-                children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: Colors.grey[300], size: 36),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Informações detalhadas em breve.',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 13),
-                  ),
-                ],
+            child: _Card(child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text('Informações em breve.',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 13)),
               ),
-            ),
+            )),
           ),
 
-        // Card de preço do token (currentTokenPriceCents do Firebase)
+        // Card preço do token (dark)
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [AppColors.background, AppColors.darkBlue],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              colors: [_bgDark, Color(0xFF0F2050)],
             ),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Preço do Token',
-                style: TextStyle(
-                    color: Colors.white.withOpacity(0.6), fontSize: 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Preço do Token', style: TextStyle(
+              color: Colors.white.withOpacity(0.5), fontSize: 12,
+            )),
+            const SizedBox(height: 4),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(startup.tokenPrice, style: const TextStyle(
+                color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700,
+              )),
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(startup.variacao, style: TextStyle(
+                  color: startup.variacaoPositiva ? _green : _red,
+                  fontSize: 15, fontWeight: FontWeight.w700,
+                )),
               ),
-              const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    startup.tokenPrice,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      startup.variacao,
-                      style: TextStyle(
-                        color: startup.variacaoPositiva
-                            ? AppColors.positive
-                            : AppColors.negative,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ]),
+          ]),
         ),
 
         const SizedBox(height: 16),
@@ -887,21 +430,15 @@ class _GeralTab extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TAB: FINANCEIRO
-// Dados: capitalRaisedCents, totalTokensIssued, currentTokenPriceCents
-//        campos placeholder (previsaoReceita, cpv, margemBrutaAlvo) vêm
-//        como '-' quando Firebase não os retorna
-//
-// Flags de acesso: isInvestor e canTradeTokens vêm de access do Firebase
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _FinanceiroTab extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA: FINANCEIRO
+// ═══════════════════════════════════════════════════════════════════════════
+class _AbaFinanceiro extends StatelessWidget {
   final Startup startup;
   final bool isInvestor;
   final bool canTradeTokens;
 
-  const _FinanceiroTab({
+  const _AbaFinanceiro({
     required this.startup,
     required this.isInvestor,
     required this.canTradeTokens,
@@ -909,574 +446,311 @@ class _FinanceiroTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tenta parsear cpv como número para a barra de progresso
+    final cpvNum = double.tryParse(
+        startup.cpv.replaceAll('%', '').replaceAll(',', '.').trim()
+    ) ?? 0;
+    final cpvFraction = (cpvNum / 100).clamp(0.0, 1.0);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Capital aportado (capitalRaisedCents convertido pelo service)
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Capital Aportado',
-                  style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    startup.capitalAportado,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text('(Simulado)',
-                      style: TextStyle(color: Colors.grey, fontSize: 13)),
-                ],
-              ),
-            ],
-          ),
+
+        // Grid 2 colunas — 4 cards
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.4,
+          children: [
+            _FinCard(label: 'Capital Aportado', valor: startup.capitalAportado, sub: 'Simulado'),
+            _FinCard(label: 'Tokens Emitidos',  valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
+            _FinCard(label: 'Previsão Receita', valor: startup.previsaoReceita, sub: '2026'),
+            _FinCard(label: 'Margem Bruta',     valor: startup.margemBrutaAlvo, sub: 'Alvo'),
+          ],
         ),
 
         const SizedBox(height: 12),
 
-        // Tokens emitidos (totalTokensIssued do Firebase)
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Tokens Emitidos',
-                  style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 4),
-              Text(
-                startup.tokensEmitidos.toString().replaceAllMapped(
-                  RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                      (m) => '${m[1]}.',
-                ),
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Representação digital de participação',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Mini resumo financeiro
-        // previsaoReceita, cpv, margemBrutaAlvo mostram '-' quando Firebase
-        // não retorna (campos não existem no getStartupDetails atual)
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Mini Resumo Financeiro',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _FinRow(
-                  label: 'Previsão de Receita (2026)',
-                  value: startup.previsaoReceita),
-              const _Divider(),
-              _FinRow(label: 'CPV', value: startup.cpv),
-              const _Divider(),
-              _FinRow(
-                  label: 'Margem Bruta Alvo',
-                  value: startup.margemBrutaAlvo),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Badge de investidor — exibido quando access.isInvestor == true
-        if (isInvestor)
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.positive.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: AppColors.positive.withOpacity(0.25)),
+        // Card CPV com progress bar
+        _Card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text('CPV', style: TextStyle(
+              color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+            )),
+            Text(startup.cpv, style: const TextStyle(
+              color: _primaryBlue, fontSize: 14, fontWeight: FontWeight.w700,
+            )),
+          ]),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: cpvFraction,
+              minHeight: 6,
+              backgroundColor: _cardBorder,
+              valueColor: const AlwaysStoppedAnimation<Color>(_primaryBlue),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded,
-                    color: AppColors.positive, size: 20),
-                const SizedBox(width: 10),
-                const Text(
-                  'Você é investidor desta startup',
-                  style: TextStyle(
-                    color: AppColors.positive,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+          ),
+        ])),
+
+        // Card investidor
+        if (isInvestor) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _green.withOpacity(0.08),
+              border: Border.all(color: _green.withOpacity(0.2)),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(children: [
+              const Icon(Icons.check_circle_rounded, color: _green, size: 20),
+              const SizedBox(width: 12),
+              const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Você é investidor desta startup', style: TextStyle(
+                  color: _green, fontSize: 14, fontWeight: FontWeight.w700,
+                )),
+              ]),
+            ]),
+          ),
+        ],
+
+        const SizedBox(height: 12),
+
+        // Botão principal
+        GestureDetector(
+          onTap: () => _mostrarModal(context),
+          child: Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: [_primaryBlue, _primaryDark],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: _primaryBlue.withOpacity(0.3),
+                  blurRadius: 20, offset: const Offset(0, 6),
                 ),
               ],
             ),
-          ),
-
-        // Botão de simular investimento
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => _showInvestModal(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
-            child: const Text(
-              'Simular Investimento',
-              style:
-              TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
+            child: Center(child: Text(
+              isInvestor ? 'Comprar mais tokens' : 'Simular Investimento',
+              style: const TextStyle(
+                color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700,
+              ),
+            )),
           ),
         ),
-
-        // Botão de vender tokens — visível apenas quando canTradeTokens == true
-        if (canTradeTokens) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              child: const Text(
-                'Vender Tokens',
-                style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
 
         const SizedBox(height: 16),
       ],
     );
   }
 
-  void _showInvestModal(BuildContext context) {
-    final controller = TextEditingController();
-    int tokens = 0;
-    double proj = 0;
+  String _formatTokens(int n) {
+    return n.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.',
+    );
+  }
 
+  void _mostrarModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) {
-          void calc() {
-            final amt = double.tryParse(
-                controller.text.replaceAll(',', '.')) ??
-                0;
-            tokens = startup.tokenPriceValue > 0
-                ? (amt / startup.tokenPriceValue).floor()
-                : 0;
-            proj = amt * 1.15;
-            setModal(() {});
-          }
-
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-                24, 24, 24,
-                MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Simular Investimento',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  startup.nome,
-                  style: const TextStyle(
-                      color: Colors.grey, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
-                  onChanged: (_) => calc(),
-                  decoration: InputDecoration(
-                    labelText: 'Valor a investir (R\$)',
-                    prefixText: 'R\$ ',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: AppColors.primary, width: 2),
-                    ),
-                  ),
-                ),
-                if (tokens > 0) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FA),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        _SimRow(
-                          label: 'Tokens recebidos',
-                          value: '$tokens tokens',
-                        ),
-                        const SizedBox(height: 8),
-                        _SimRow(
-                          label: 'Projeção (+15%)',
-                          value:
-                          'R\$ ${proj.toStringAsFixed(2).replaceAll('.', ',')}',
-                          highlight: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: tokens > 0
-                        ? () => Navigator.pop(ctx)
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey[200],
-                      padding:
-                      const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Text(
-                      'Confirmar Investimento',
-                      style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      builder: (_) => _ModalInvestimento(startup: startup),
     );
   }
 }
 
-class _FinRow extends StatelessWidget {
+class _FinCard extends StatelessWidget {
   final String label;
-  final String value;
-
-  const _FinRow({required this.label, required this.value});
+  final String valor;
+  final String sub;
+  const _FinCard({required this.label, required this.valor, required this.sub});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(
-            value,
-            style: TextStyle(
-              color: value == '-'
-                  ? Colors.grey[300]
-                  : AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        border: Border.all(color: _cardBorder),
+        borderRadius: BorderRadius.circular(16),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(color: Color(0xFF999999), fontSize: 11)),
+        const SizedBox(height: 4),
+        Text(valor, style: const TextStyle(
+          color: _textPrimary, fontSize: 18, fontWeight: FontWeight.w700,
+        )),
+        const SizedBox(height: 2),
+        Text(sub, style: const TextStyle(color: Color(0xFFCCCCCC), fontSize: 10)),
+      ]),
     );
   }
 }
 
-class _Divider extends StatelessWidget {
-  const _Divider();
-
-  @override
-  Widget build(BuildContext context) =>
-      Divider(height: 1, color: Colors.grey[100]);
-}
-
-class _SimRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool highlight;
-
-  const _SimRow({
-    required this.label,
-    required this.value,
-    this.highlight = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label,
-            style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        Text(
-          value,
-          style: TextStyle(
-            color: highlight ? AppColors.positive : AppColors.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TAB: SÓCIOS
-// Dados: founders → socios, externalMembers → mentores (mapeados no service)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SociosTab extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA: SÓCIOS
+// ═══════════════════════════════════════════════════════════════════════════
+class _AbaSocios extends StatelessWidget {
   final Startup startup;
-  const _SociosTab({required this.startup});
+  const _AbaSocios({required this.startup});
 
   @override
   Widget build(BuildContext context) {
+    final comPercentual = startup.socios.where((s) => s.percentual > 0).toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Estrutura societária com barras de progresso
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Estrutura Societária',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ...startup.socios.map(
-                    (s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          _AvatarCircle(initials: s.avatar, size: 28),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              s.nome,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '${s.percentual}%',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: s.percentual / 100,
-                          minHeight: 6,
-                          backgroundColor: Colors.grey[100],
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.primary),
-                        ),
-                      ),
-                    ],
+
+        // Estrutura Societária
+        _Card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Estrutura Societária', style: TextStyle(
+            color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+          )),
+          const SizedBox(height: 12),
+          ...comPercentual.map((s) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Row(children: [
+                  Container(
+                    width: 24, height: 24,
+                    decoration: BoxDecoration(
+                      color: _primaryBlue.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(child: Text(s.avatar, style: const TextStyle(
+                      color: _primaryBlue, fontSize: 9, fontWeight: FontWeight.w700,
+                    ))),
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Apresentação dos sócios (founders com bio do Firebase)
-        const Text(
-          'Apresentação dos Sócios',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ...startup.socios.map(
-              (s) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _SectionCard(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _AvatarCircle(initials: s.avatar, size: 46),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.nome,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  const SizedBox(width: 8),
+                  Text(s.nome, style: const TextStyle(
+                    color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w600,
+                  )),
+                ]),
+                Text('${s.percentual}%', style: const TextStyle(
+                  color: _primaryBlue, fontSize: 13, fontWeight: FontWeight.w700,
+                )),
+              ]),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  height: 6,
+                  decoration: const BoxDecoration(color: _cardBorder),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: s.percentual / 100,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_primaryBlue, _green],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          // cargo pode vir como "CEO" ou "CEO, Empresa"
-                          s.cargo.split(',').first,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        if (s.descricao.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            s.descricao,
-                            style: const TextStyle(
-                              color: Color(0xFF666666),
-                              fontSize: 12,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ],
+                        borderRadius: BorderRadius.all(Radius.circular(999)),
+                      ),
                     ),
                   ),
+                ),
+              ),
+            ]),
+          )),
+        ])),
+
+        const SizedBox(height: 12),
+
+        // Fundadores
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('Fundadores', style: TextStyle(
+            color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+          )),
+        ),
+
+        ...startup.socios.map((s) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _Card(
+            padding: const EdgeInsets.all(16),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 48, height: 48,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    colors: [_primaryBlue, _bgDark],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(child: Text(s.avatar, style: const TextStyle(
+                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700,
+                ))),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.nome, style: const TextStyle(
+                  color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+                )),
+                const SizedBox(height: 1),
+                Text(s.cargo.split(',').first, style: const TextStyle(
+                  color: _primaryBlue, fontSize: 12,
+                )),
+                if (s.descricao.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(s.descricao, style: const TextStyle(
+                    color: Color(0xFF777777), fontSize: 12, height: 1.5,
+                  )),
                 ],
-              ),
-            ),
+              ])),
+            ]),
           ),
-        ),
+        )),
 
-        // Conselho e Mentores (externalMembers do Firebase)
+        // Mentores
         if (startup.mentores.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          const Text(
-            'Conselho e Mentores',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+          const Padding(
+            padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),
+            child: Text('Conselho e Mentores', style: TextStyle(
+              color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+            )),
           ),
-          const SizedBox(height: 10),
-          ...startup.mentores.map(
-                (m) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _SectionCard(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  children: [
-                    _AvatarCircle(
-                        initials: m.avatar, size: 40, muted: true),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            m.nome,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          // cargo do mentor: "Cargo, Organização" (montado no service)
-                          Text(
-                            m.cargo,
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          ...startup.mentores.map((m) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _Card(
+              padding: const EdgeInsets.all(14),
+              child: Row(children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: const BoxDecoration(
+                    color: _cardBorder, shape: BoxShape.circle,
+                  ),
+                  child: Center(child: Text(m.avatar, style: const TextStyle(
+                    color: Color(0xFF666666), fontSize: 11, fontWeight: FontWeight.w700,
+                  ))),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(m.nome, style: const TextStyle(
+                    color: _textPrimary, fontSize: 13, fontWeight: FontWeight.w600,
+                  )),
+                  Text(m.cargo, style: const TextStyle(
+                    color: Color(0xFF888888), fontSize: 12,
+                  )),
+                ])),
+              ]),
             ),
-          ),
+          )),
         ],
 
         const SizedBox(height: 16),
@@ -1485,29 +759,27 @@ class _SociosTab extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TAB: PERGUNTAS
-// Dados: publicQuestions do Firebase → perguntas (mapeado no service)
-// Flag: canSendPrivateQuestions (access do Firebase)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _PerguntasTab extends StatefulWidget {
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA: PERGUNTAS
+// ═══════════════════════════════════════════════════════════════════════════
+class _AbaPerguntas extends StatefulWidget {
   final Startup startup;
   final bool canSendPrivateQuestions;
-  final VoidCallback onRefresh; // NOVO: Callback para atualizar a tela
+  final StartupService service;
 
-  const _PerguntasTab({
+  const _AbaPerguntas({
     required this.startup,
     required this.canSendPrivateQuestions,
-    required this.onRefresh,
+    required this.service,
   });
 
   @override
-  State<_PerguntasTab> createState() => _PerguntasTabState();
+  State<_AbaPerguntas> createState() => _AbaPerguntasState();
 }
 
-class _PerguntasTabState extends State<_PerguntasTab> {
-  final Set<int> _expanded = {};
+class _AbaPerguntasState extends State<_AbaPerguntas> {
+  String? _expandedId;
+  final Set<String> _liked = {};
 
   @override
   Widget build(BuildContext context) {
@@ -1516,459 +788,252 @@ class _PerguntasTabState extends State<_PerguntasTab> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          '${perguntas.length} pergunta${perguntas.length == 1 ? '' : 's'} da comunidade',
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
+
+        // Subtítulo
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            '${perguntas.length} ${perguntas.length == 1 ? "pergunta" : "perguntas"} da comunidade',
+            style: const TextStyle(color: Color(0xFF999999), fontSize: 12),
           ),
         ),
-        const SizedBox(height: 12),
 
-        if (perguntas.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                children: [
-                  Icon(Icons.chat_bubble_outline_rounded,
-                      color: Colors.grey[200], size: 40),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Nenhuma pergunta ainda.\nSeja o primeiro!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 13),
-                  ),
-                ],
+        // Acordeão de perguntas
+        ...perguntas.map((p) {
+          final expanded = _expandedId == p.id;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _cardBg,
+                border: Border.all(color: _cardBorder),
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-          )
-        else
-          ...perguntas.asMap().entries.map(
-                (e) => _FaqItem(
-              index: e.key,
-              pergunta: e.value,
-              isExpanded: _expanded.contains(e.key),
-              onToggle: () => setState(() {
-                _expanded.contains(e.key)
-                    ? _expanded.remove(e.key)
-                    : _expanded.add(e.key);
-              }),
-            ),
-          ),
+              clipBehavior: Clip.hardEdge,
+              child: Column(children: [
 
-        const SizedBox(height: 16),
+                // Cabeçalho clicável
+                GestureDetector(
+                  onTap: () => setState(() => _expandedId = expanded ? null : p.id),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(children: [
+                      Expanded(child: Text(p.pergunta, style: const TextStyle(
+                        color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600, height: 1.4,
+                      ))),
+                      const SizedBox(width: 8),
+                      Icon(
+                        expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                        color: expanded ? _primaryBlue : _iconInactive,
+                        size: 20,
+                      ),
+                    ]),
+                  ),
+                ),
 
+                // Corpo
+                if (expanded)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+                      // Caixa azul clara com resposta
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F4FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(p.resposta, style: const TextStyle(
+                          color: Color(0xFF444444), fontSize: 13, height: 1.6,
+                        )),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Ações
+                      Row(children: [
+                        GestureDetector(
+                          onTap: () => setState(() {
+                            _liked.contains(p.id) ? _liked.remove(p.id) : _liked.add(p.id);
+                          }),
+                          child: Row(children: [
+                            Icon(
+                              _liked.contains(p.id) ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                              size: 14,
+                              color: _liked.contains(p.id) ? _primaryBlue : const Color(0xFFAAAAAA),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${p.likes + (_liked.contains(p.id) ? 1 : 0)}',
+                              style: TextStyle(
+                                color: _liked.contains(p.id) ? _primaryBlue : const Color(0xFFAAAAAA),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(width: 16),
+                        Row(children: [
+                          const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: Color(0xFFAAAAAA)),
+                          const SizedBox(width: 4),
+                          Text('${p.comments}', style: const TextStyle(
+                            color: Color(0xFFAAAAAA), fontSize: 13,
+                          )),
+                        ]),
+                      ]),
+                    ]),
+                  ),
+              ]),
+            ),
+          );
+        }),
+
+        // Botão fazer pergunta
         GestureDetector(
-          onTap: () => _showAskSheet(context),
+          onTap: () => _mostrarModalPergunta(context),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              border: Border.all(
+                color: _primaryBlue.withOpacity(0.3), width: 2,
+                strokeAlign: BorderSide.strokeAlignInside,
+              ),
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.chat_bubble_outline_rounded,
-                    color: AppColors.primary, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  widget.canSendPrivateQuestions
-                      ? 'Fazer uma pergunta pública ou privada'
-                      : 'Fazer uma pergunta',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(Icons.chat_bubble_outline_rounded, color: _primaryBlue, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                widget.canSendPrivateQuestions
+                    ? 'Fazer uma pergunta pública ou privada'
+                    : 'Fazer uma pergunta',
+                style: const TextStyle(
+                  color: _primaryBlue, fontSize: 14, fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
+              ),
+            ]),
           ),
         ),
+
         const SizedBox(height: 16),
       ],
     );
   }
 
-  void _showAskSheet(BuildContext context) {
-    final controller = TextEditingController();
-    bool isPrivate = false;
-    bool isSubmitting = false;
-
+  void _mostrarModalPergunta(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-                24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Fazer uma pergunta',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Escreva sua pergunta para os fundadores...',
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: AppColors.primary, width: 2),
-                    ),
-                  ),
-                  onChanged: (_) => setModalState(() {}), // Atualiza pra habilitar botão
-                ),
-                if (widget.canSendPrivateQuestions) ...[
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: const Text('Enviar como pergunta privada', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Visível apenas para você e os fundadores', style: TextStyle(fontSize: 12)),
-                    value: isPrivate,
-                    activeColor: AppColors.primary,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (val) => setModalState(() => isPrivate = val),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isSubmitting || controller.text.trim().isEmpty
-                        ? null
-                        : () async {
-                      setModalState(() => isSubmitting = true);
-                      try {
-                        await StartupService.instance.createStartupQuestion(
-                          startupId: widget.startup.id,
-                          text: controller.text.trim(),
-                          visibility: isPrivate ? 'privada' : 'publica',
-                        );
-
-                        if (ctx.mounted) Navigator.pop(ctx);
-                        if (context.mounted) {
-                          Notificacao.sucesso(context, 'Pergunta enviada com sucesso!');
-                        }
-                        widget.onRefresh(); // Chama o refresh pra carregar a pergunta nova
-                      } catch (e) {
-                        if (context.mounted) {
-                          Notificacao.erro(context, 'Erro ao enviar pergunta. Tente novamente.');
-                        }
-                      } finally {
-                        if (ctx.mounted) {
-                          setModalState(() => isSubmitting = false);
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey[200],
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: isSubmitting
-                        ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                        : const Text(
-                      'Enviar Pergunta',
-                      style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Center(child: Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2)),
+          )),
+          const SizedBox(height: 20),
+          const Text('Fazer uma pergunta', style: TextStyle(
+            color: _textPrimary, fontSize: 18, fontWeight: FontWeight.w700,
+          )),
+          const SizedBox(height: 16),
+          TextField(
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'Escreva sua pergunta para os fundadores...',
+              hintStyle: const TextStyle(color: Color(0xFF999999)),
+              filled: true,
+              fillColor: const Color(0xFFF5F6F8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+              ),
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _FaqItem extends StatelessWidget {
-  final int index;
-  final Pergunta pergunta;
-  final bool isExpanded;
-  final VoidCallback onToggle;
-
-  const _FaqItem({
-    required this.index,
-    required this.pergunta,
-    required this.isExpanded,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header da FAQ
+          const SizedBox(height: 16),
           GestureDetector(
-            onTap: onToggle,
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      pergunta.pergunta,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Colors.grey[400],
-                      size: 20,
-                    ),
-                  ),
-                ],
+            onTap: () => Navigator.pop(ctx),
+            child: Container(
+              width: double.infinity, height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [_primaryBlue, _primaryDark]),
+                borderRadius: BorderRadius.circular(24),
               ),
+              child: const Center(child: Text('Enviar Pergunta', style: TextStyle(
+                color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700,
+              ))),
             ),
           ),
-
-          // Corpo da FAQ
-          AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Divider(height: 1, color: Colors.grey[100]),
-                  const SizedBox(height: 12),
-                  Text(
-                    // answer pode ser null no Firebase — service usa 'Sem resposta ainda.'
-                    pergunta.resposta,
-                    style: const TextStyle(
-                      color: Color(0xFF555555),
-                      fontSize: 13,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _ReactionButton(
-                        icon: Icons.thumb_up_outlined,
-                        count: pergunta.likes,
-                      ),
-                      const SizedBox(width: 16),
-                      _ReactionButton(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        count: pergunta.comments,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            crossFadeState: isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
-        ],
+        ]),
       ),
     );
   }
 }
 
-class _ReactionButton extends StatelessWidget {
-  final IconData icon;
-  final int count;
-
-  const _ReactionButton({required this.icon, required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: Colors.grey[400]),
-        const SizedBox(width: 4),
-        Text(
-          '$count',
-          style: TextStyle(color: Colors.grey[400], fontSize: 12),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TAB: MÍDIA
-// Dados: demoVideos (URLs do Firebase), pitchDeckUrl, materiais do startup
-//
-// demoVideos e pitchDeckUrl são passados diretamente da página pai
-// pois não estão no modelo Startup — vêm separados do getStartupDetails
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MidiaTab extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════════════════
+// ABA: MÍDIA
+// ═══════════════════════════════════════════════════════════════════════════
+class _AbaMidia extends StatelessWidget {
   final Startup startup;
   final List<String> demoVideos;
   final String? pitchDeckUrl;
 
-  const _MidiaTab({
-    required this.startup,
-    required this.demoVideos,
-    required this.pitchDeckUrl,
-  });
+  const _AbaMidia({required this.startup, required this.demoVideos, required this.pitchDeckUrl});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Vídeos do Firebase (demoVideos: string[])
-        // Se não tiver nenhum, mostra cards placeholder
-        if (demoVideos.isEmpty) ...[
-          _VideoCard(
-            title: 'Vídeo Demonstrativo',
-            subtitle: 'Pitch principal da ${startup.nome}',
-            duration: '5:32',
-            gradientColors: const [AppColors.background, AppColors.darkBlue],
-            playColor: AppColors.primary,
-            url: null,
-          ),
-          const SizedBox(height: 12),
-          _VideoCard(
-            title: 'Apresentação dos Sócios',
-            subtitle: 'Entrevista com os fundadores',
-            duration: '3:15',
-            gradientColors: const [Color(0xFF1A3A2A), Color(0xFF0A2015)],
-            playColor: AppColors.positive,
-            url: null,
-          ),
-        ] else
-          ...demoVideos.asMap().entries.map(
-                (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _VideoCard(
-                title: e.key == 0
-                    ? 'Vídeo Demonstrativo'
-                    : 'Apresentação ${e.key + 1}',
-                subtitle: 'Pitch da ${startup.nome}',
-                duration: '--:--',
-                gradientColors: e.key == 0
-                    ? const [AppColors.background, AppColors.darkBlue]
-                    : const [Color(0xFF1A3A2A), Color(0xFF0A2015)],
-                playColor: e.key == 0
-                    ? AppColors.primary
-                    : AppColors.positive,
-                url: e.value,
-              ),
-            ),
-          ),
 
-        const SizedBox(height: 4),
+        // Cards de vídeo
+        ..._buildVideoCards(),
 
-        // Materiais adicionais:
-        // 1. pitchDeckUrl do Firebase (se existir)
-        // 2. materiais do modelo Startup (do catálogo local)
+        // Materiais adicionais
         if (pitchDeckUrl != null || startup.materiais.isNotEmpty) ...[
-          const Text(
-            'Materiais Adicionais',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+          const Padding(
+            padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),
+            child: Text('Materiais Adicionais', style: TextStyle(
+              color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+            )),
           ),
-          const SizedBox(height: 10),
-
-          // Deck de investimento vindo do Firebase (pitchDeckUrl)
           if (pitchDeckUrl != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _MaterialCard(
-                titulo: 'Deck de Investimento',
-                tipo: 'PDF',
-                tamanho: '-',
-                url: pitchDeckUrl,
-              ),
-            ),
-
-          // Demais materiais do modelo (catálogo local)
-          ...startup.materiais.map(
-                (mat) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _MaterialCard(
-                titulo: mat.titulo,
-                tipo: mat.tipo,
-                tamanho: mat.tamanho,
-                url: null,
-              ),
-            ),
+            _MaterialCard(titulo: 'Deck de Investimento', tipo: 'PDF', tamanho: '-'),
+          ...startup.materiais.map((m) =>
+              _MaterialCard(titulo: m.titulo, tipo: m.tipo, tamanho: m.tamanho),
           ),
         ],
 
         const SizedBox(height: 16),
       ],
     );
+  }
+
+  List<Widget> _buildVideoCards() {
+    final videos = demoVideos.isNotEmpty
+        ? demoVideos.asMap().entries.map((e) => _VideoCard(
+      title: e.key == 0 ? 'Vídeo Demonstrativo' : 'Apresentação ${e.key + 1}',
+      subtitle: 'Pitch da ${startup.nome}',
+      duration: '--:--',
+      url: e.value,
+    )).toList()
+        : [
+      _VideoCard(title: 'Vídeo Demonstrativo', subtitle: 'Pitch principal da ${startup.nome}', duration: '5:32', url: null),
+      const _VideoCard(title: 'Apresentação dos Sócios', subtitle: 'Entrevista com os fundadores', duration: '3:15', url: null),
+    ];
+
+    return videos.map((v) => Padding(padding: const EdgeInsets.only(bottom: 12), child: v)).toList();
   }
 }
 
@@ -1976,119 +1041,68 @@ class _VideoCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String duration;
-  final List<Color> gradientColors;
-  final Color playColor;
   final String? url;
 
-  const _VideoCard({
-    required this.title,
-    required this.subtitle,
-    required this.duration,
-    required this.gradientColors,
-    required this.playColor,
-    required this.url,
-  });
+  const _VideoCard({required this.title, required this.subtitle, required this.duration, required this.url});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: url != null ? () {} : null, // TODO: abrir url no browser
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF0F0F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(16)),
-              child: SizedBox(
-                height: 150,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: gradientColors,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 12,
-                            ),
-                          ],
-                        ),
-                        child: Icon(Icons.play_arrow_rounded,
-                            color: playColor, size: 28),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 10,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          duration,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11),
-                        ),
-                      ),
-                    ),
-                  ],
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        border: Border.all(color: _cardBorder),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // Thumbnail
+        SizedBox(
+          height: 144, width: double.infinity,
+          child: Stack(fit: StackFit.expand, children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  colors: [Color(0xFF020C14), Color(0xFF0F2050)],
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          color: Colors.grey, fontSize: 12)),
-                ],
+            Center(child: Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12)],
+              ),
+              child: const Icon(Icons.play_arrow_rounded, color: _primaryBlue, size: 30),
+            )),
+            Positioned(
+              left: 12, bottom: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(duration, style: const TextStyle(color: Colors.white, fontSize: 11)),
               ),
             ),
-          ],
+          ]),
         ),
-      ),
+
+        // Info
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: const TextStyle(
+              color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w700,
+            )),
+            const SizedBox(height: 2),
+            Text(subtitle, style: const TextStyle(color: Color(0xFF999999), fontSize: 12)),
+          ]),
+        ),
+      ]),
     );
   }
 }
@@ -2097,72 +1111,434 @@ class _MaterialCard extends StatelessWidget {
   final String titulo;
   final String tipo;
   final String tamanho;
-  final String? url;
 
-  const _MaterialCard({
-    required this.titulo,
-    required this.tipo,
-    required this.tamanho,
-    required this.url,
-  });
+  const _MaterialCard({required this.titulo, required this.tipo, required this.tamanho});
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _Card(
+        padding: const EdgeInsets.all(14),
+        child: Row(children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 48, height: 48,
             decoration: BoxDecoration(
-              color: Colors.red[50],
+              color: const Color(0xFFFFF0F0),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.picture_as_pdf_rounded,
-                color: Colors.red, size: 24),
+            child: const Icon(Icons.insert_drive_file_outlined, color: Color(0xFFE53E3E), size: 22),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  titulo,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  tamanho != '-' ? '$tipo • $tamanho' : tipo,
-                  style:
-                  const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(titulo, style: const TextStyle(
+              color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600,
+            )),
+            Text('$tipo · $tamanho', style: const TextStyle(
+              color: Color(0xFF999999), fontSize: 12,
+            )),
+          ])),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: _primaryBlue.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.download_rounded, color: _primaryBlue, size: 16),
           ),
-          GestureDetector(
-            onTap: url != null ? () {} : null, // TODO: abrir url
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: url != null
-                    ? AppColors.primary.withOpacity(0.1)
-                    : Colors.grey[100],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.download_rounded,
-                color: url != null ? AppColors.primary : Colors.grey[300],
-                size: 16,
-              ),
-            ),
-          ),
-        ],
+        ]),
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL: SIMULAR INVESTIMENTO
+// ═══════════════════════════════════════════════════════════════════════════
+class _ModalInvestimento extends StatefulWidget {
+  final Startup startup;
+  const _ModalInvestimento({required this.startup});
+
+  @override
+  State<_ModalInvestimento> createState() => _ModalInvestimentoState();
+}
+
+class _ModalInvestimentoState extends State<_ModalInvestimento> {
+  final _controller = TextEditingController();
+  bool _success = false;
+  int _tokensToGet = 0;
+  double _amountNum = 0;
+
+  static const _quickAmounts = ['R\$ 100', 'R\$ 500', 'R\$ 1.000', 'R\$ 5.000'];
+  String? _selectedQuick;
+
+  double get _pricePerToken => widget.startup.tokenPriceValue;
+
+  void _calcular(String val) {
+    final clean = val.replaceAll('R\$ ', '').replaceAll('.', '').replaceAll(',', '.');
+    final num = double.tryParse(clean) ?? 0;
+    setState(() {
+      _amountNum = num;
+      _tokensToGet = _pricePerToken > 0 ? (num / _pricePerToken).floor() : 0;
+    });
+  }
+
+  void _confirmar() {
+    setState(() => _success = true);
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted) Navigator.pop(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_success) return _buildSuccess();
+    return _buildForm();
+  }
+
+  Widget _buildSuccess() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 80, height: 80,
+          decoration: BoxDecoration(
+            color: _green.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_circle_rounded, color: _green, size: 40),
+        ),
+        const SizedBox(height: 16),
+        const Text('Investimento realizado!', style: TextStyle(
+          color: _textPrimary, fontSize: 20, fontWeight: FontWeight.w700,
+        )),
+        const SizedBox(height: 8),
+        Text('$_tokensToGet tokens adicionados à sua carteira.',
+            style: const TextStyle(color: Color(0xFF888888), fontSize: 13)),
+      ]),
+    );
+  }
+
+  Widget _buildForm() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // Drag pill
+        Center(child: Container(
+          width: 40, height: 4,
+          decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(2)),
+        )),
+        const SizedBox(height: 16),
+
+        // Header
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Simular Investimento', style: TextStyle(
+              color: _textPrimary, fontSize: 18, fontWeight: FontWeight.w700,
+            )),
+            Text('${widget.startup.nome} · ${widget.startup.tokenPrice}/token',
+                style: const TextStyle(color: Color(0xFF888888), fontSize: 12)),
+          ]),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 32, height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F6F8), shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF666666)),
+            ),
+          ),
+        ]),
+
+        const SizedBox(height: 16),
+
+        // Quick amounts
+        Wrap(spacing: 8, runSpacing: 8, children: _quickAmounts.map((q) {
+          final active = _selectedQuick == q;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedQuick = q);
+              final val = q.replaceAll('R\$ ', '').replaceAll('.', '');
+              _controller.text = val;
+              _calcular(val);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: active ? _primaryBlue : const Color(0xFFF5F6F8),
+                border: Border.all(color: active ? _primaryBlue : Colors.transparent),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(q, style: TextStyle(
+                color: active ? Colors.white : _textPrimary,
+                fontSize: 13, fontWeight: FontWeight.w500,
+              )),
+            ),
+          );
+        }).toList()),
+
+        const SizedBox(height: 16),
+
+        // Campo de valor
+        const Text('Valor a investir (R\$)', style: TextStyle(
+          color: Color(0xFF666666), fontSize: 12, fontWeight: FontWeight.w600,
+        )),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: _calcular,
+          style: const TextStyle(
+            color: _textPrimary, fontSize: 18, fontWeight: FontWeight.w700,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFFF5F6F8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+
+        // Preview
+        if (_tokensToGet > 0) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _primaryBlue.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Tokens a receber', style: TextStyle(color: Color(0xFF666666), fontSize: 13)),
+                Text('$_tokensToGet', style: const TextStyle(
+                  color: _primaryBlue, fontSize: 18, fontWeight: FontWeight.w700,
+                )),
+              ]),
+              const SizedBox(height: 8),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Valor total', style: TextStyle(color: Color(0xFF666666), fontSize: 13)),
+                Text(_formatBRL(_tokensToGet * _pricePerToken), style: const TextStyle(
+                  color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600,
+                )),
+              ]),
+            ]),
+          ),
+        ],
+
+        const SizedBox(height: 16),
+
+        // Botão confirmar
+        GestureDetector(
+          onTap: _tokensToGet > 0 ? _confirmar : null,
+          child: Container(
+            width: double.infinity, height: 56,
+            decoration: BoxDecoration(
+              gradient: _tokensToGet > 0
+                  ? const LinearGradient(colors: [_primaryBlue, _primaryDark])
+                  : null,
+              color: _tokensToGet > 0 ? null : const Color(0xFFF0F0F0),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: _tokensToGet > 0 ? [
+                BoxShadow(color: _primaryBlue.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 6)),
+              ] : null,
+            ),
+            child: Center(child: Text(
+              _tokensToGet > 0 ? 'Confirmar · $_tokensToGet tokens' : 'Informe um valor',
+              style: TextStyle(
+                color: _tokensToGet > 0 ? Colors.white : Colors.white.withOpacity(0.4),
+                fontSize: 16, fontWeight: FontWeight.w700,
+              ),
+            )),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Rodapé
+        const Center(child: Text(
+          '⚠️ Operação simulada · Sem envolvimento de ativos reais',
+          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 11),
+          textAlign: TextAlign.center,
+        )),
+      ]),
+    );
+  }
+
+  String _formatBRL(double v) {
+    final s = v.toStringAsFixed(2).replaceAll('.', ',');
+    final parts = s.split(',');
+    final buf = StringBuffer();
+    final intPart = parts[0];
+    for (var i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write('.');
+      buf.write(intPart[i]);
+    }
+    return 'R\$ $buf,${parts[1]}';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WIDGETS UTILITÁRIOS
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _Card extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets? padding;
+  const _Card({required this.child, this.padding});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        border: Border.all(color: _cardBorder),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _HeaderSkeleton extends StatelessWidget {
+  const _HeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        _Shimmer(width: 68, height: 68, radius: 16),
+        const SizedBox(width: 16),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _Shimmer(width: 160, height: 20, radius: 6),
+          const SizedBox(height: 8),
+          _Shimmer(width: 120, height: 14, radius: 6),
+          const SizedBox(height: 8),
+          _Shimmer(width: 80, height: 20, radius: 6),
+        ])),
+      ]),
+      const SizedBox(height: 12),
+      _Shimmer(width: double.infinity, height: 14, radius: 6),
+      const SizedBox(height: 6),
+      _Shimmer(width: 200, height: 14, radius: 6),
+    ]);
+  }
+}
+
+class _HeaderErro extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _HeaderErro({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      const Icon(Icons.wifi_off_rounded, color: Colors.white54, size: 18),
+      const SizedBox(width: 8),
+      const Text('Erro ao carregar', style: TextStyle(color: Colors.white54, fontSize: 13)),
+      const Spacer(),
+      TextButton(onPressed: onRetry, child: const Text('Tentar novamente',
+          style: TextStyle(color: _primaryBlue, fontSize: 13))),
+    ]);
+  }
+}
+
+class _ContentSkeleton extends StatelessWidget {
+  const _ContentSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(height: 10),
+        Row(children: List.generate(5, (_) => Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: _Shimmer(width: 50, height: 40, radius: 6),
+        ))),
+        const SizedBox(height: 20),
+        _Shimmer(width: double.infinity, height: 100, radius: 16),
+        const SizedBox(height: 12),
+        _Shimmer(width: double.infinity, height: 80, radius: 16),
+      ]),
+    );
+  }
+}
+
+class _TelaErro extends StatelessWidget {
+  final String mensagem;
+  final VoidCallback onRetry;
+  const _TelaErro({required this.mensagem, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.error_outline_rounded, color: Colors.grey, size: 48),
+        const SizedBox(height: 12),
+        const Text('Não foi possível carregar os dados', style: TextStyle(
+          color: _textPrimary, fontSize: 16, fontWeight: FontWeight.w600,
+        )),
+        const SizedBox(height: 8),
+        Text(mensagem, textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: onRetry,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _primaryBlue, foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('Tentar novamente'),
+        ),
+      ]),
+    ));
+  }
+}
+
+class _Shimmer extends StatelessWidget {
+  final double width;
+  final double height;
+  final double radius;
+  const _Shimmer({required this.width, required this.height, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width, height: height,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+// Helper
+String _initials(String name) {
+  final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '??';
+  if (parts.length == 1) return parts[0][0].toUpperCase();
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
