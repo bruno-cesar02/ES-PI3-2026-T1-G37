@@ -38,7 +38,7 @@ class MesclaInvestApp extends StatelessWidget {
           ? const TelaLogadaScreen()
           : const TelaInicialScreen(),
 
-      routes: {
+     /* routes: {
         
       // ── Tela inicial ────────────────────────────────────────────────
       // É aqui que você define qual tela aparece primeiro.
@@ -52,7 +52,7 @@ class MesclaInvestApp extends StatelessWidget {
         '/': (context) => const TelaInicialScreen(),
         '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
         '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
-      },  
+      }, */
     );
   }
 }
