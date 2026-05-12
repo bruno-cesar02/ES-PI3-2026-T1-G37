@@ -4,7 +4,7 @@ RA: 24025832
 */
 
 import 'package:flutter/material.dart';
-import 'package:mobile/screens/startup_details_page.dart';
+import 'package:mobile/screens/startup_detalhes_screen.dart';
 import 'package:mobile/services/ListStartupService.dart';
 
 class CatalogoScreen extends StatefulWidget {

@@ -3,6 +3,7 @@ Nome: Otávio Augusto Antunes Marquez
 RA: 24025832
 */
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'catalogo_screen.dart';
 
