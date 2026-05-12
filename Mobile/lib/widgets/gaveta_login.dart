@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
 import 'gaveta_cadastro.dart';
+import 'gaveta_esqueceu_senha.dart';
 
 class GavetaLogin extends StatefulWidget {
   const GavetaLogin({super.key});
@@ -53,7 +54,6 @@ class _GavetaLoginState extends State<GavetaLogin> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      // Ajusta a altura proporcionalmente ao teclado
       height: MediaQuery.of(context).size.height * 0.82 + bottomInset,
       decoration: BoxDecoration(
         color: const Color(0xFF1A2A4A).withOpacity(0.92),
@@ -92,12 +92,15 @@ class _GavetaLoginState extends State<GavetaLogin> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        final mainContext = Navigator.of(context);
-
-                        mainContext.pop(); 
-
+                        final navigator = Navigator.of(context);
+                        navigator.pop();
                         Future.delayed(const Duration(milliseconds: 300), () {
-                          mainContext.pushNamed('/esqueceu-senha');
+                          showModalBottomSheet(
+                            context: navigator.context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => const GavetaEsqueceuSenha(),
+                          );
                         });
                       },
                       child: const Text(

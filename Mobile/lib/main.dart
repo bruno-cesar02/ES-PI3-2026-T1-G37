@@ -4,8 +4,6 @@
 import 'package:flutter/material.dart';
 import 'config/firebase_setup.dart'; 
 import 'screens/tela_inicial_screen.dart';
-import 'screens/forgot_password_screen.dart';
-import 'screens/reset_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,9 +50,8 @@ class MesclaInvestApp extends StatelessWidget {
       // ADICIONE AQUI cada nova tela que você criar:
         '/': (context) => const TelaInicialScreen(),
         '/cadastro': (context) => const Placeholder(), // → troque por CadastroScreen()
-        '/login':    (context) => const Placeholder(), // → troque por LoginScreen()
-        '/esqueceu-senha': (context) => const ForgotPasswordScreen(),
-        '/redefinir-senha': (context) => const ResetPasswordScreen(),
+        '/login':    (context) => const Placeholder(), // → troque por LoginScreen()R
+        '/login':    (context) => const Placeholder(), // → troque por LoginScreen()R
       },  
     );
   }
