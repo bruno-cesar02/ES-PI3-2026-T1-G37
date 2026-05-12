@@ -8,7 +8,7 @@ const _functionsOrigin = 'http://127.0.0.1:5001';
 
 
 Uri _functionUri(String functionName) {
-  return Uri.parse('$_functionsOrigin/$_projectId/us-central1/$functionName');
+  return Uri.parse('$_functionsOrigin/$_projectId/southamerica-east1/$functionName');
 }
 
 void main() {

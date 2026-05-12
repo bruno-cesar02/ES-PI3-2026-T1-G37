@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/tela_logada_screen.dart';
+import 'package:mobile/services/logar_service.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
 import 'gaveta_cadastro.dart';
 import 'gaveta_esqueceu_senha.dart';
+import 'notificacao.dart';
 
 class GavetaLogin extends StatefulWidget {
   const GavetaLogin({super.key});
@@ -25,28 +28,33 @@ class _GavetaLoginState extends State<GavetaLogin> {
 
   Future<void> _enviarLogin() async {
     if (_emailController.text.isEmpty || _senhaController.text.isEmpty) {
-      _erro('Preencha e-mail e senha.');
+      Notificacao.erro(context, 'Preencha e-mail e senha.');
       return;
     }
-    _erro('Login ainda não implementado.');
-  }
 
-  void _erro(String msg) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A2A4A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Atenção', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(msg, style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF1E90FF), fontSize: 16)),
-          ),
-        ],
-      ),
-    );
+    setState(() => _carregando = true);
+
+    try {
+      final sucesso = await LogarService.logar(
+        email: _emailController.text.trim(),
+        senha: _senhaController.text,
+      );
+
+      if (sucesso && mounted) {
+        // Fecha a gaveta e vai para a tela logada
+        // pushAndRemoveUntil garante que não sobra nada na pilha de navegação
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => TelaLogadaScreen()),
+              (_) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Notificacao.erro(context, e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _carregando = false);
+    }
   }
 
   @override
@@ -103,10 +111,7 @@ class _GavetaLoginState extends State<GavetaLogin> {
                           );
                         });
                       },
-                      child: const Text(
-                        'esqueceu a senha?',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
+                      child: const Text('esqueceu a senha?', style: TextStyle(color: Colors.white70, fontSize: 13)),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -120,8 +125,8 @@ class _GavetaLoginState extends State<GavetaLogin> {
                       Future.delayed(const Duration(milliseconds: 300), () {
                         if (context.mounted) {
                           showModalBottomSheet(
-                            context: context, 
-                            isScrollControlled: true, 
+                            context: context,
+                            isScrollControlled: true,
                             backgroundColor: Colors.transparent,
                             builder: (_) => const GavetaCadastro(),
                           );

@@ -5,3 +5,4 @@ setGlobalOptions({
   region: "southamerica-east1",
 });
 export * from "./users";
+export * from "./startups";
