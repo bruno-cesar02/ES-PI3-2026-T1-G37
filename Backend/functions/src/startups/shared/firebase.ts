@@ -15,3 +15,4 @@ if (getApps().length === 0) {
 // Exporta o banco e a autenticação já prontos para uso
 export const auth = getAuth();
 export const db = getFirestore();
+

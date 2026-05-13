@@ -1,3 +1,7 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502 
+*/
+
 import {FieldValue} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
@@ -10,6 +14,21 @@ import {
   userIsInvestor,
 } from "../repositories/startupRepository";
 import {QuestionVisibility, StartupQuestionDocument} from "../types";
+
+/**
+ * Cria uma pergunta para uma startup.
+ *
+ * Esta Firebase Function é callable e deve ser chamada pelo app com:
+ *
+ * - `startupId`: identificador da startup.
+ * - `text`: texto da pergunta.
+ * - `visibility`: visibilidade opcional (`publica` ou `privada`).
+ *
+ * Perguntas públicas podem ser enviadas por qualquer usuário autenticado.
+ * Perguntas privadas exigem que o usuário tenha um documento em:
+ * `startups/{startupId}/investors/{uid}`.
+*/
+
 
 export const createStartupQuestion = onCall(async (request) => {
   const user = requireAuthenticatedUser(request);

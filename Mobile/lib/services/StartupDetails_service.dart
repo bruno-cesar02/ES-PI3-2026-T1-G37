@@ -1,3 +1,6 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502 */
+
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/startup_model.dart';
 
@@ -12,7 +15,7 @@ class StartupService {
     final result = await callable.call({'id': startupId});
     final raw = Map<String, dynamic>.from(result.data as Map);
     final data = Map<String, dynamic>.from(raw['data'] as Map);
-    print('DADOS RECEBIDOS: $data'); // ← adiciona isso
+    print('DADOS RECEBIDOS: $data');
     return _mapToResult(data);
   }
 
