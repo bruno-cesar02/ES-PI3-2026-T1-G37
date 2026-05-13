@@ -16,7 +16,7 @@ class CatalogoScreen extends StatefulWidget {
 
 class _CatalogoScreenState extends State<CatalogoScreen> {
   String? _digitado = "";
-  String? _filtro = 'em_operacao';
+  String? _filtro = "";
   List<dynamic> _startups = [];
   bool _isLoading = false;
 
@@ -41,18 +41,16 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       backgroundColor: const Color.fromARGB(255, 2, 12, 20),
       body: Container(
-        margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.1),
+        margin: EdgeInsets.only (top: MediaQuery.of(context).size.height * 0.1),
         width: double.infinity,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
 
-            // ── Título ───────────────────────────────────────────────────────
             RichText(
               textWidthBasis: TextWidthBasis.longestLine,
               textAlign: TextAlign.center,
@@ -67,13 +65,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
             const SizedBox(height: 24),
 
-            // ── Busca e filtro ────────────────────────────────────────────────
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.8,
               child: Column(
                 children: [
                   TextField(
-                    onChanged: (valor) {
+                    onSubmitted: (valor) {
                       setState(() => _digitado = valor);
                       _carregarDados();
                     },
@@ -91,7 +88,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       _carregarDados();
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem<String?>(value: null, child: Text('Todos')),
+                      const PopupMenuItem<String?>(value: '', child: Text('Todos')),
                       const PopupMenuItem<String?>(value: 'em_operacao', child: Text('Em Operação')),
                       const PopupMenuItem<String?>(value: 'nova', child: Text('Nova')),
                       const PopupMenuItem<String?>(value: 'em_expansao', child: Text('Em Expansão')),
@@ -103,7 +100,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
             const SizedBox(height: 16),
 
-            // ── Lista de startups ─────────────────────────────────────────────
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(10),
@@ -128,7 +124,19 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       margin: const EdgeInsets.all(8.0),
                       child: ListTile(
                         textColor: Colors.black,
-                        leading: const Icon(Icons.business_outlined),
+                        leading: Container(
+                            height: 50,
+                            width: 50,
+                            clipBehavior: Clip.hardEdge,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10)
+                            ),
+                            child: Image.network(
+                              startup['coverImageUrl'],
+                              height: 50,
+                              width: 50,
+                              fit: BoxFit.cover,
+                        )),
                         title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -162,4 +170,3 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       ),
     );
   }
-}

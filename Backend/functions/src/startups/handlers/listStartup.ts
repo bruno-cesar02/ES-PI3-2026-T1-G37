@@ -7,9 +7,11 @@ import {HttpsError, onCall} from "firebase-functions/https";
 import {normalizeString} from "../shared/validation";
 import {listStartupsItems} from "../repositories/startupRepository";
 import {StartupStages} from "../types";
+import {requireAuthenticatedUser} from "../shared/auth";
+import { allowedStages } from "../shared/constants";
 
 export const listStartups = onCall(async (req) => {
-  //requireAuthenticatedUser(req);
+  requireAuthenticatedUser(req);
 
   const stage = normalizeString(req.data?.stage);
 
@@ -17,7 +19,7 @@ export const listStartups = onCall(async (req) => {
     ?.toLocaleLowerCase("pt-BR");
 
   if (stage &&
-    !StartupStages[stage.toUpperCase() as keyof typeof StartupStages]) {
+    !allowedStages.includes(stage as StartupStages)) {
     throw new HttpsError("invalid-argument", "Invalid stage provided");
   }
 
