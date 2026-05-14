@@ -93,11 +93,24 @@ class _StartupDetailsPageState extends State<StartupDetailsPage>
     final statusText = s.status.startsWith('*') ? s.status.substring(1) : s.status;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(width: 68, height: 68,
+        Container(
+            width: 68, height: 68,
+            clipBehavior: Clip.hardEdge,
             decoration: BoxDecoration(
                 gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary, Color(0xFF1A3A8F)]),
                 borderRadius: BorderRadius.circular(16)),
-            child: Center(child: Text(buildInitials(s.nome), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)))),
+            child: (_coverImageUrl != null && _coverImageUrl!.isNotEmpty)
+                ? Image.network(
+              _coverImageUrl!,
+              width: 68, height: 68,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Center(
+                child: Text(buildInitials(s.nome),
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+              ),
+            )
+                : Center(child: Text(buildInitials(s.nome),
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)))),
         const SizedBox(width: 16),
         Expanded(child: Padding(padding: const EdgeInsets.only(top: 2),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
