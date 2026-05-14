@@ -34,21 +34,16 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
     super.dispose();
   }
 
-  // ── Validação alinhada com o backend ──────────────────────────
-  // O Firebase Auth exige mínimo 6 chars, mas a gente pede 8
-  // para segurança. Os outros requisitos são validados aqui no Flutter
-  // antes de chamar o backend (evita chamadas desnecessárias).
   String? _validarSenha(String senha) {
-    if (senha.length < 8)                                    return 'Mínimo 8 caracteres.';
-    if (!senha.contains(RegExp(r'[A-Z]')))                   return 'Adicione uma letra maiúscula.';
-    if (!senha.contains(RegExp(r'[a-z]')))                   return 'Adicione uma letra minúscula.';
-    if (!senha.contains(RegExp(r'[0-9]')))                   return 'Adicione um número.';
+    if (senha.length < 8)                                        return 'Mínimo 8 caracteres.';
+    if (!senha.contains(RegExp(r'[A-Z]')))                       return 'Adicione uma letra maiúscula.';
+    if (!senha.contains(RegExp(r'[a-z]')))                       return 'Adicione uma letra minúscula.';
+    if (!senha.contains(RegExp(r'[0-9]')))                       return 'Adicione um número.';
     if (!senha.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-]'))) return 'Adicione um símbolo (!@#\$%&*).';
-    return null; // null = senha válida
+    return null;
   }
 
   Future<void> _enviarCadastro() async {
-    // Campos vazios
     if (_nomeController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _cpfController.text.isEmpty ||
@@ -59,14 +54,12 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
       return;
     }
 
-    // Requisitos da senha
     final erroSenha = _validarSenha(_senhaController.text);
     if (erroSenha != null) {
       Notificacao.erro(context, erroSenha);
       return;
     }
 
-    // Senhas coincidem
     if (_senhaController.text != _confirmarSenhaController.text) {
       Notificacao.erro(context, 'As senhas não coincidem. Verifique e tente novamente.');
       return;
@@ -92,6 +85,21 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
     }
   }
 
+  void _irParaLogin() {
+    // Captura o context da Navigator antes do pop,
+    // garantindo que ele ainda esteja montado após fechar a gaveta.
+    final nav = Navigator.of(context);
+    nav.pop();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      showModalBottomSheet(
+        context: nav.context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const GavetaLogin(),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -106,7 +114,8 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
         children: [
           const SizedBox(height: 12),
           Container(
-            width: 60, height: 5,
+            width: 60,
+            height: 5,
             decoration: BoxDecoration(
               color: Colors.white38,
               borderRadius: BorderRadius.circular(10),
@@ -120,7 +129,11 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
                 children: [
                   const Text(
                     'Cadastro',
-                    style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   RichText(
@@ -131,7 +144,10 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
                         TextSpan(text: 'Crie sua conta e comece investir\nem startups com o '),
                         TextSpan(
                           text: 'MesclaInvest',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -140,22 +156,34 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
 
                   CampoTexto(label: 'Nome Completo', controller: _nomeController),
                   const SizedBox(height: 12),
-                  CampoTexto(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
+                  CampoTexto(
+                    label: 'Email',
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                   const SizedBox(height: 12),
-                  CampoTexto(label: 'CPF', controller: _cpfController, keyboardType: TextInputType.number),
+                  CampoTexto(
+                    label: 'CPF',
+                    controller: _cpfController,
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 12),
-                  CampoTexto(label: 'Celular', controller: _celularController, keyboardType: TextInputType.phone),
-                  const SizedBox(height: 12),
-
-                  // Campo de senha COM olho + requisitos
-                  CampoSenha(
-                    label: 'Senha',
-                    controller: _senhaController,
-                    mostrarRequisitos: true, // só o campo principal mostra os requisitos
+                  CampoTexto(
+                    label: 'Celular',
+                    controller: _celularController,
+                    keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 12),
 
-                  // Confirmar senha COM olho, SEM requisitos (não precisa repetir)
+                  // Campo senha COM olho + requisitos
+                  CampoSenha(
+                    label: 'Senha',
+                    controller: _senhaController,
+                    mostrarRequisitos: true,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Confirmar senha COM olho, SEM requisitos
                   CampoSenha(
                     label: 'Confirmar senha',
                     controller: _confirmarSenhaController,
@@ -165,23 +193,16 @@ class _GavetaCadastroState extends State<GavetaCadastro> {
 
                   _carregando
                       ? const CircularProgressIndicator(color: Color(0xFF1E90FF))
-                      : BotaoPrimario(texto: 'Enviar', isPrimary: true, onPressed: _enviarCadastro),
+                      : BotaoPrimario(
+                    texto: 'Enviar',
+                    isPrimary: true,
+                    onPressed: _enviarCadastro,
+                  ),
                   const SizedBox(height: 16),
 
+                  // ── Link para o Login ────────────────────────────────
                   TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (context.mounted) {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => const GavetaLogin(),
-                          );
-                        }
-                      });
-                    },
+                    onPressed: _irParaLogin,
                     child: const Text(
                       'Já tem conta? Faça login',
                       style: TextStyle(color: Colors.white70),
