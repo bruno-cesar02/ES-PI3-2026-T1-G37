@@ -230,7 +230,11 @@ class _CarteiraScreenState extends State<CarteiraScreen>{
 
 
           Container(
+            clipBehavior: Clip.hardEdge,
             width: double.infinity,
+            decoration: BoxDecoration(
+
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 20,
@@ -241,71 +245,75 @@ class _CarteiraScreenState extends State<CarteiraScreen>{
                     fontWeight: FontWeight(800)
                   ),
                 ),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(40, 217, 217, 217),
-                    border: BoxBorder.all(
-                      color: Colors.grey,
-                      width: 0.5
-                    ),
-                    borderRadius: BorderRadiusGeometry.all(Radius.circular(20))
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsetsGeometry.all(30),
-                        child: Row(
-                          spacing: 20,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.domain),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Karpós S.A",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight(600),
-                                    fontSize: 20
-                                  ),
-                                ),
-                                Text("350 tokens",
-                                  style: TextStyle(
-                                    color: Colors.grey
-                                  ),
-                                ),
-                                Text("15,00/un",
-                                  style: TextStyle(
-                                      color: Colors.grey
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text("R\$ 5.250,00",
-                                  style: TextStyle(
-                                    fontSize: 18
-                                  ),
-                                ),
-                                Text("+ 5.2%",
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.green,
-
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Icon(Icons.arrow_forward_ios, color: Colors.white,)
-                          ],
-                        ),
+                InkWell(
+                    onLongPress: null,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      decoration: BoxDecoration(
+                          color: Color.fromARGB(40, 217, 217, 217),
+                          border: BoxBorder.all(
+                              color: Colors.grey,
+                              width: 0.5
+                          ),
+                          borderRadius: BorderRadiusGeometry.all(Radius.circular(20))
                       ),
-                    ],
-                  ),
-                )
+                      child: Column(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsetsGeometry.all(30),
+                            child: Row(
+                              spacing: 20,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Icon(Icons.domain),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text("Karpós S.A",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight(600),
+                                          fontSize: 20
+                                      ),
+                                    ),
+                                    Text("350 tokens",
+                                      style: TextStyle(
+                                          color: Colors.grey
+                                      ),
+                                    ),
+                                    Text("15,00/un",
+                                      style: TextStyle(
+                                          color: Colors.grey
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text("R\$ 5.250,00",
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight(600)
+                                      ),
+                                    ),
+                                    Text("+ 5.2%",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Icon(Icons.arrow_forward_ios, color: Colors.white,)
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))
+
               ],
             )
           ),
