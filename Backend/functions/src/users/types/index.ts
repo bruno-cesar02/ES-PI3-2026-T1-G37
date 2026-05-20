@@ -19,3 +19,8 @@ export type UserDocument = {
   createdAt: FieldValue | Timestamp;
   mfaEnabled: boolean; // Já deixamos pronto para a Autenticação de 2 Fatores
 };
+
+export type AuthenticatedUser = {
+  uid: string;
+  email?: string;
+};

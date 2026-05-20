@@ -4,12 +4,6 @@ RA: 24025832
 */ 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
-
-export type AuthenticatedUser = {
-  uid: string,
-  email?: string,
-}
-
 export enum StartupStages {
   NOVA = "nova",
   EM_OPERACAO = "em_operacao",
@@ -28,11 +22,10 @@ export type Founder = {
   bio?: string,
 }
 
-
 export type ExternalMember = {
   name: string,
   role: string,
-  organization?: string,
+  organization?: string,  
 }
 
 export type StartupDocument = {

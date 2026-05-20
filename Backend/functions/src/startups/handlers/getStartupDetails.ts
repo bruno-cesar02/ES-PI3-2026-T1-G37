@@ -3,7 +3,7 @@
 */
 
 import {HttpsError, onCall} from "firebase-functions/https";
-import {requireAuthenticatedUser} from "../shared/auth";
+import {requireAuthenticatedUser} from "../../users/shared/auth";
 import {normalizeString} from "../shared/validation";
 import {
  getStartupById,
