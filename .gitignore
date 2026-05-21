@@ -63,3 +63,9 @@ Desktop.ini
 *.idea
 .idea
 .vscode/
+
+# Ignorar builds de Desktop que não estamos usando
+linux/
+macos/
+windows/
+pubspec.lock

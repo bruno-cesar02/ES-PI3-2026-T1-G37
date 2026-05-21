@@ -4,6 +4,7 @@ import 'package:mobile/services/logar_service.dart';
 import 'botao_primario.dart';
 import 'campo_texto.dart';
 import 'gaveta_cadastro.dart';
+import 'gaveta_esqueceu_senha.dart';
 import 'notificacao.dart';
 
 class GavetaLogin extends StatefulWidget {
@@ -40,8 +41,6 @@ class _GavetaLoginState extends State<GavetaLogin> {
       );
 
       if (sucesso && mounted) {
-        // Fecha a gaveta e vai para a tela logada
-        // pushAndRemoveUntil garante que não sobra nada na pilha de navegação
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => TelaLogadaScreen()),
               (_) => false,
@@ -54,6 +53,19 @@ class _GavetaLoginState extends State<GavetaLogin> {
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
+  }
+
+  void _irParaCadastro() {
+    final nav = Navigator.of(context);
+    nav.pop();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      showModalBottomSheet(
+        context: nav.context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const GavetaCadastro(),
+      );
+    });
   }
 
   @override
@@ -70,8 +82,12 @@ class _GavetaLoginState extends State<GavetaLogin> {
         children: [
           const SizedBox(height: 12),
           Container(
-            width: 60, height: 5,
-            decoration: BoxDecoration(color: Colors.white38, borderRadius: BorderRadius.circular(10)),
+            width: 60,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Colors.white38,
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -79,7 +95,14 @@ class _GavetaLoginState extends State<GavetaLogin> {
               padding: EdgeInsets.fromLTRB(32, 0, 32, bottomInset + 16),
               child: Column(
                 children: [
-                  const Text('Login', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Login',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   RichText(
                     textAlign: TextAlign.center,
@@ -87,47 +110,70 @@ class _GavetaLoginState extends State<GavetaLogin> {
                       style: TextStyle(color: Colors.white70, fontSize: 14),
                       children: [
                         TextSpan(text: 'Bem-vindo de volta ao '),
-                        TextSpan(text: 'MesclaInvest', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        TextSpan(
+                          text: 'MesclaInvest',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 28),
-                  CampoTexto(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
+
+                  CampoTexto(
+                    label: 'Email',
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                   const SizedBox(height: 12),
-                  CampoTexto(label: 'Senha', controller: _senhaController, obscureText: true),
+
+                  CampoSenha(
+                    label: 'Senha',
+                    controller: _senhaController,
+                    mostrarRequisitos: false,
+                  ),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        final nav = Navigator.of(context);
-                        nav.pop();
+                        final navigator = Navigator.of(context);
+                        navigator.pop();
                         Future.delayed(const Duration(milliseconds: 300), () {
-                          nav.pushNamed('/esqueceu-senha');
-                        });
-                      },
-                      child: const Text('esqueceu a senha?', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _carregando
-                      ? const CircularProgressIndicator(color: Color(0xFF1E90FF))
-                      : BotaoPrimario(texto: 'Entrar', isPrimary: true, onPressed: _enviarLogin),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (context.mounted) {
                           showModalBottomSheet(
-                            context: context,
+                            context: navigator.context,
                             isScrollControlled: true,
                             backgroundColor: Colors.transparent,
-                            builder: (_) => const GavetaCadastro(),
+                            builder: (_) => const GavetaEsqueceuSenha(),
                           );
-                        }
-                      });
-                    },
-                    child: const Text('Não tem conta? Cadastre-se', style: TextStyle(color: Colors.white70)),
+                        });
+                      },
+                      child: const Text(
+                        'Esqueceu a senha?',
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _carregando
+                      ? const CircularProgressIndicator(color: Color(0xFF1E90FF))
+                      : BotaoPrimario(
+                    texto: 'Entrar',
+                    isPrimary: true,
+                    onPressed: _enviarLogin,
+                  ),
+
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: _irParaCadastro,
+                    child: const Text(
+                      'Não tem conta? Cadastre-se',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ),
                 ],
               ),

@@ -13,8 +13,6 @@ export function requireAuthenticatedUser(req: CallableRequest): AuthenticatedUse
   }
 
   return {
-    
-    
     uid: req.auth.uid,
     email: req.auth.token.email,
   };
