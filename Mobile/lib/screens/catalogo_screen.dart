@@ -123,6 +123,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       color: const Color.fromARGB(255, 194, 194, 194),
                       margin: const EdgeInsets.all(8.0),
                       child: ListTile(
+                        contentPadding: EdgeInsetsGeometry.all(15),
                         textColor: Colors.black,
                         leading: Container(
                             height: 50,
@@ -133,22 +134,33 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                             ),
                             child: Image.network(
                               startup['coverImageUrl'],
-                              height: 50,
-                              width: 50,
                               fit: BoxFit.cover,
                         )),
                         title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(startup['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w800)),
-                            Text(startup['stage'] ?? ''),
+                            Text(startup['stage'] == 'nova' ? 'Nova' : startup['stage'] == 'em_expansao' ? 'Em Expansão' : 'Em Operação'),
                           ],
                         ),
-                        subtitle: Text(
-                          startup['shortDescription'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.w300),
-                        ),
-                        // ── Ao clicar abre a tela de detalhes ────────
+                        subtitle: RichText(
+                            text: TextSpan(
+                                text: startup['shortDescription'].length >= 60 ? startup['shortDescription'].substring(0, 60) + '...\n'
+                                : startup['shortDescription'] + '\n'
+                                ?? '',
+                                style: const TextStyle(color:Colors.black, fontWeight: FontWeight.w300, overflow: TextOverflow.ellipsis),
+                                children: [
+                                TextSpan(
+                                  text: "Preço Token: R\$" + startup['currentTokenPriceCents'].toString(),
+                                  style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight(800),
+                                      overflow: TextOverflow.clip
+                                  ),
+                            ),
+                          ],
+                        )),
+                        isThreeLine: true,
                         onTap: () {
                           final id = startup['id'] as String?;
                           if (id == null || id.isEmpty) return;

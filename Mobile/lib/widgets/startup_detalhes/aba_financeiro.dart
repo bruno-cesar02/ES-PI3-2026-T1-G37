@@ -24,7 +24,7 @@ class AbaFinanceiro extends StatelessWidget {
       GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.4, children: [
           _FinCard(label: 'Capital Aportado', valor: startup.capitalAportado, sub: 'Simulado'),
-          _FinCard(label: 'Tokens Emitidos', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
+          _FinCard(label: 'Tokens Restantes', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
           _FinCard(label: 'Previsão Receita', valor: startup.previsaoReceita, sub: '2026'),
           _FinCard(label: 'Margem Bruta', valor: startup.margemBrutaAlvo, sub: 'Alvo'),
         ]),

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';
+import '../../services/StartupDetails_service.dart';
 import '../../theme/app_colors.dart';
 
 class ModalInvestimento extends StatefulWidget {
@@ -17,6 +18,7 @@ class ModalInvestimento extends StatefulWidget {
 class _ModalInvestimentoState extends State<ModalInvestimento> {
   final _controller = TextEditingController();
   bool _success = false;
+  bool _isLoading = false;
   int _tokensToGet = 0;
   double _amountNum = 0;
 
@@ -31,9 +33,42 @@ class _ModalInvestimentoState extends State<ModalInvestimento> {
     setState(() { _amountNum = num; _tokensToGet = _pricePerToken > 0 ? (num / _pricePerToken).floor() : 0; });
   }
 
-  void _confirmar() {
-    setState(() => _success = true);
-    Future.delayed(const Duration(milliseconds: 1800), () { if (mounted) Navigator.pop(context); });
+  Future<void> _confirmar() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // O backend trabalha com centavos para evitar erros de ponto flutuante
+      final currentPriceCents = (widget.startup.tokenPriceValue * 100).round();
+      final totalPriceCents = _tokensToGet * currentPriceCents;
+
+      // Chama a function de compra
+      await StartupService.instance.buyStartupToken(
+        startupId: widget.startup.id,
+        startupName: widget.startup.nome,
+        currentTokenPriceCents: currentPriceCents,
+        tokenAmount: _tokensToGet,
+        totalPriceCents: totalPriceCents,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _success = true;
+        });
+
+        // Retorna 'true' ao fechar o modal para que a tela de detalhes saiba que precisa recarregar os dados
+        Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) Navigator.pop(context, true);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao comprar tokens: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -129,15 +164,19 @@ class _ModalInvestimentoState extends State<ModalInvestimento> {
               color: _tokensToGet > 0 ? null : const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(24),
               boxShadow: _tokensToGet > 0 ? [BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 6))] : null,
             ),
-            child: Center(child: Text(
-              _tokensToGet > 0 ? 'Confirmar · $_tokensToGet tokens' : 'Informe um valor',
-              style: TextStyle(color: _tokensToGet > 0 ? Colors.white : Colors.white.withOpacity(0.4), fontSize: 16, fontWeight: FontWeight.w700),
-            )),
+            child: Center(
+              child: _isLoading
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : Text(
+                _tokensToGet > 0 ? 'Confirmar · $_tokensToGet tokens' : 'Informe um valor',
+                style: TextStyle(color: _tokensToGet > 0 ? Colors.white : Colors.white.withOpacity(0.4), fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 12),
         const Center(child: Text('⚠️ Operação simulada · Sem envolvimento de ativos reais',
-          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 11), textAlign: TextAlign.center)),
+            style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 11), textAlign: TextAlign.center)),
       ]),
     );
   }

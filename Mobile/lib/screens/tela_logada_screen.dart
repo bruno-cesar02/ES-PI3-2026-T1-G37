@@ -6,6 +6,7 @@ RA: 24025832
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'catalogo_screen.dart';
+import 'carteira_screen.dart';
 
 class TelaLogadaScreen extends StatefulWidget {
   const TelaLogadaScreen({super.key});
@@ -19,7 +20,7 @@ class _TelaLogadaScreenState extends State<TelaLogadaScreen> {
 
   final List<Widget> _telas = const [
     CatalogoScreen(),
-    Center(child: Text('Carteira - Em breve')),
+    CarteiraScreen(),
     Center(child: Text('Dashboard - Em breve')),
     Center(child: Text('Perfil - Em breve')),
   ];

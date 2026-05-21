@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';
+import '../../services/StartupDetails_service.dart';
 import '../../theme/app_colors.dart';
 
 class ModalVenda extends StatefulWidget {
@@ -15,6 +16,7 @@ class ModalVenda extends StatefulWidget {
 class _ModalVendaState extends State<ModalVenda> {
   final _controller = TextEditingController();
   bool _success = false;
+  bool _isLoading = false;
   int _tokensToSell = 0;
   double _totalValueToReceive = 0;
 
@@ -36,11 +38,38 @@ class _ModalVendaState extends State<ModalVenda> {
     });
   }
 
-  void _confirmar() {
-    setState(() => _success = true);
-    Future.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted) Navigator.pop(context);
-    });
+  Future<void> _confirmar() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final currentPriceCents = (widget.startup.tokenPriceValue * 100).round();
+      final totalPriceCents = _tokensToSell * currentPriceCents;
+
+      await StartupService.instance.sellStartupToken(
+        startupId: widget.startup.id,
+        startupName: widget.startup.nome,
+        currentTokenPriceCents: currentPriceCents,
+        tokenAmount: _tokensToSell,
+        totalPriceCents: totalPriceCents,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _success = true;
+        });
+        Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) Navigator.pop(context, true);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao vender tokens: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -147,10 +176,13 @@ class _ModalVendaState extends State<ModalVenda> {
               color: _tokensToSell > 0 ? null : const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(24),
               boxShadow: _tokensToSell > 0 ? [BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 6))] : null,
             ),
-            child: Center(child: Text(
-              _tokensToSell > 0 ? 'Vender $_tokensToSell tokens' : 'Informe uma quantidade',
-              style: TextStyle(color: _tokensToSell > 0 ? Colors.white : Colors.white.withOpacity(0.4), fontSize: 16, fontWeight: FontWeight.w700),
-            )),
+              child: Center(child: _isLoading
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : Text(
+                _tokensToSell > 0 ? 'Vender $_tokensToSell tokens' : 'Informe uma quantidade',
+                style: TextStyle(color: _tokensToSell > 0 ? Colors.white : Colors.white.withOpacity(0.4), fontSize: 16, fontWeight: FontWeight.w700),
+              )
+              ),
           ),
         ),
         const SizedBox(height: 12),
