@@ -18,7 +18,6 @@
         "*.local"
       ],
       "predeploy": [
-      
         "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
@@ -43,5 +42,13 @@
       "enabled": true
     },
     "singleProjectMode": true
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   }
 }
