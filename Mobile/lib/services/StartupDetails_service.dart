@@ -92,16 +92,20 @@ StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
     );
   }).toList();
 
-  final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
-    final question = Map<String, dynamic>.from(q as Map);
-    return Pergunta(
-      id: question['id'] as String? ?? '',
-      pergunta: question['text'] as String? ?? '',
-      resposta: question['answer'] as String? ?? 'Sem resposta ainda.',
-      likes: 0,
-      comments: 0,
-    );
-  }).toList();
+final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
+  final question = Map<String, dynamic>.from(q as Map);
+  final visibilityStr = question['visibility'] as String? ?? 'publica';
+  return Pergunta(
+    id: question['id'] as String? ?? '',
+    pergunta: question['text'] as String? ?? '',
+    resposta: question['answer'] as String? ?? 'Sem resposta ainda.',
+    likes: 0,
+    comments: 0,
+    visibility: visibilityStr == 'privada'
+        ? QuestionVisibility.privada
+        : QuestionVisibility.publica,
+  );
+}).toList();
 
   final geral = <SecaoGeral>[
     if (_notEmpty(data['executiveSummary']))

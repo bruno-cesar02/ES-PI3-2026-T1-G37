@@ -1,3 +1,5 @@
+enum QuestionVisibility { publica, privada }
+
 class Socio {
   final String nome;
   final String cargo;
@@ -32,6 +34,7 @@ class Pergunta {
   final String resposta;
   final int likes;
   final int comments;
+  final QuestionVisibility visibility;
 
   const Pergunta({
     required this.id,
@@ -39,6 +42,7 @@ class Pergunta {
     required this.resposta,
     required this.likes,
     required this.comments,
+    this.visibility = QuestionVisibility.publica,
   });
 }
 

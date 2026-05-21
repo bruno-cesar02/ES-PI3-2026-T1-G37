@@ -30,6 +30,12 @@ class FirebaseSetup {
       FirebaseFunctions.instanceFor(region: 'southamerica-east1')
           .useFunctionsEmulator(host, 5001);
       print('✅ MODO DEV: Conectado ao Emulador Local!');
+      print('═══════════════════════════════════════════');
+      print('🔥 MODO EMULADOR ATIVO — host: $host');
+      print('   Firestore: $host:8080');
+      print('   Auth:      $host:9099');
+      print('   Functions: $host:5001');
+      print('═══════════════════════════════════════════');
     } catch (e) {
       print('❌ Erro ao conectar no emulador: $e');
     }

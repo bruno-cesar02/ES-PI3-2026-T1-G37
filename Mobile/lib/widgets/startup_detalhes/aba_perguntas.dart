@@ -1,5 +1,6 @@
 /* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Perguntas — accordion de Q&A + envio de novas perguntas. */
+   Aba Perguntas — accordion de Q&A + envio de novas perguntas.
+   Exibe perguntas privadas (apenas para investidores) com ícone de cadeado. */
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';
@@ -27,24 +28,55 @@ class _AbaPerguntasState extends State<AbaPerguntas> {
   @override
   Widget build(BuildContext context) {
     final perguntas = widget.startup.perguntas;
+    final temPrivadas = perguntas.any((p) => p.visibility == QuestionVisibility.privada);
 
     return ListView(padding: const EdgeInsets.all(16), children: [
       Padding(padding: const EdgeInsets.only(left: 4, bottom: 12),
         child: Text('${perguntas.length} ${perguntas.length == 1 ? "pergunta" : "perguntas"} da comunidade',
           style: const TextStyle(color: Color(0xFF999999), fontSize: 12))),
 
+      if (temPrivadas) Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          ),
+          child: Row(children: const [
+            Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.primaryDark),
+            SizedBox(width: 8),
+            Expanded(child: Text(
+              'Você está vendo perguntas exclusivas de investidores.',
+              style: TextStyle(color: AppColors.primaryDark, fontSize: 12, fontWeight: FontWeight.w500),
+            )),
+          ]),
+        ),
+      ),
+
       ...perguntas.map((p) {
         final expanded = _expandedId == p.id;
+        final isPrivada = p.visibility == QuestionVisibility.privada;
+
         return Padding(padding: const EdgeInsets.only(bottom: 12),
           child: Container(
-            decoration: BoxDecoration(color: AppColors.cardBg, border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg,
+              border: Border.all(color: isPrivada ? AppColors.primary.withOpacity(0.3) : AppColors.border),
+              borderRadius: BorderRadius.circular(16),
+            ),
             clipBehavior: Clip.hardEdge,
             child: Column(children: [
               GestureDetector(
                 onTap: () => setState(() => _expandedId = expanded ? null : p.id),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(padding: const EdgeInsets.all(16),
-                  child: Row(children: [
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    if (isPrivada) Padding(
+                      padding: const EdgeInsets.only(right: 8, top: 2),
+                      child: Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.primary),
+                    ),
                     Expanded(child: Text(p.pergunta, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600, height: 1.4))),
                     const SizedBox(width: 8),
                     Icon(expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
