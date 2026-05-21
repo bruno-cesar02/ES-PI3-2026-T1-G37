@@ -20,6 +20,7 @@ export type TokenHolding = {
   quantity: number,
   averagePurchasePriceCents: number,
   currentPriceCents: number,
+  totalPriceCents?: number,
 }
 
 export type WalletTransaction = {

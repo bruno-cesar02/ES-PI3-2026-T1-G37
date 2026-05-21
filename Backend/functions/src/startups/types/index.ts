@@ -71,4 +71,13 @@ export type StartupQuestionDocument = {
   createdAt: FieldValue,
 }
 
+export type ExchangeDocument = {
+  startupId: string,
+  tokenOwnerId: string,
+  startupName: string,
+  quantity: number,
+  averagePurchasePriceCents: number,
+  currentPriceCents: number,
+}
+
 

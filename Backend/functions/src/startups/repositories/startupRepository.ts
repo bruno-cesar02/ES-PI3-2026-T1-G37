@@ -233,7 +233,7 @@ const demoStartups : Array<StartupDocument & {id: string}> = [
     ],
     externalMembers: [],
     demoVideos: [],
-    pitchDeckUrl: undefined,
+    pitchDeckUrl: "https://www.slideshare.net/demo-karpos",
     coverImageUrl: "https://example.com/cover-karpos.jpg",
     tags: ["agronegócio", "agritech", "tecnologia rural"],
   },

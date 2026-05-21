@@ -46,7 +46,7 @@ export async function updateWalletBalance(userId: string, balanceChangeCents: nu
     throw new HttpsError("invalid-argument", "Invalid userId provided");
   }
 
-  if(!balanceChangeCents || typeof balanceChangeCents !== "number") {
+  if(typeof balanceChangeCents !== "number") {
     console.error("updateWalletBalance esta chamando com mudanças de saldo inválidas:", {balanceChangeCents});
     throw new HttpsError("invalid-argument", "Invalid balance change values provided");
   }
@@ -61,19 +61,15 @@ export async function updateWalletBalance(userId: string, balanceChangeCents: nu
 
   const {wallet} = userDoc.data() as WalletDocument;
 
-  console.log(wallet);
-  console.log("Saldo atual:", wallet.balanceCents);
-  console.log("Mudança de saldo solicitada:", balanceChangeCents);
-
   if (wallet.balanceCents + balanceChangeCents < 0) {
     throw new HttpsError("failed-precondition", "Saldo insuficiente para esta operação");
   }
 
-  let totalEquityCents = balanceChangeCents;
+  let totalEquityCents = userDoc.data()?.wallet.balanceCents || 0 + balanceChangeCents;
 
   investedSnapshot.forEach(doc => {
     const holding = doc.data() as TokenHolding;
-    totalEquityCents += holding.quantity * (holding.currentPriceCents / 100);
+    totalEquityCents += holding.totalPriceCents || 0;
   });
 
   let totalCashOut = 0;
@@ -96,4 +92,24 @@ export async function updateWalletBalance(userId: string, balanceChangeCents: nu
     "wallet.totalequity": totalEquityCents,
     "wallet.totalProfitLoss": totalProfitLossCents
   });
+
+  if (balanceChangeCents > 0) {
+    await userRef.collection("transactions").doc().set({
+      type: "compra",
+      startupId: "cash",
+      startupName: "Saldo da Carteira",
+      quantity: 1,
+      priceCents: -balanceChangeCents,
+      date: FieldValue.serverTimestamp(),
+    } as WalletTransaction);
+  } else if (balanceChangeCents < 0) {
+    await userRef.collection("transactions").doc().set({
+      type: "venda",
+      startupId: "cash",
+      startupName: "Saldo da Carteira",
+      quantity: 1,
+      priceCents: balanceChangeCents,
+      date: FieldValue.serverTimestamp(),
+    } as WalletTransaction);
+  }
 }
