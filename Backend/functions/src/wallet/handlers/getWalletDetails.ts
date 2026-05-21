@@ -25,5 +25,4 @@ export const getWalletDetails = onCall(async (req) => {
     
     throw new HttpsError("internal", "Erro ao buscar detalhes da carteira");
   }
-
 });

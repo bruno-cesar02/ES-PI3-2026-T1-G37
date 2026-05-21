@@ -6,3 +6,4 @@ export { listStartups } from "./handlers/listStartup";
 export { seedStartupCatalog } from "./handlers/seedStartupCatalog";
 export {createStartupQuestion} from "./handlers/createStartupQuestion";
 export {getStartupDetails} from "./handlers/getStartupDetails";
+export { listStartupExchangesHandler } from "./handlers/listStartupExchange";

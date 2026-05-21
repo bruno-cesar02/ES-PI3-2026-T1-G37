@@ -71,4 +71,9 @@ export type StartupQuestionDocument = {
   createdAt: FieldValue,
 }
 
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
 
