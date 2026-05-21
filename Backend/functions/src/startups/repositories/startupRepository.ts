@@ -4,9 +4,7 @@ RA: 24025832
 */
 
 import {FieldValue} from "firebase-admin/firestore";
-import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument } from "../types";
-import { db } from "../shared/firebase";
-
+import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument, QuestionVisibility } from "../types";import { db } from "../shared/firebase";
 const startupsCollection = db.collection("startups");
 
 const demoStartups : Array<StartupDocument & {id: string}> = [
@@ -233,7 +231,7 @@ const demoStartups : Array<StartupDocument & {id: string}> = [
     ],
     externalMembers: [],
     demoVideos: [],
-    pitchDeckUrl: undefined,
+    pitchDeckUrl: "https://www.slideshare.net/demokarpos",
     coverImageUrl: "https://example.com/cover-karpos.jpg",
     tags: ["agronegócio", "agritech", "tecnologia rural"],
   },
@@ -397,4 +395,80 @@ export async function listPublicQuestions(startupId: string) {
     .sort((left, right) =>
       String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? ""))
     );
+}
+
+
+/**
+ * Lista as perguntas que o usuário pode ver para essa startup:
+ * - Todas as públicas (visíveis a qualquer pessoa).
+ * - Apenas as privadas em que o próprio usuário é o autor.
+ *
+ * Usado quando o solicitante é investidor da startup.
+*/
+export async function listInvestorVisibleQuestions(
+  startupId: string,
+  uid: string
+) {
+  const questionsSnapshot = await startupsCollection
+    .doc(startupId)
+    .collection("questions")
+    .limit(100)
+    .get();
+
+  return questionsSnapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      text: doc.get("text"),
+      visibility: doc.get("visibility") ?? QuestionVisibility.PUBLICA,
+      authorUid: doc.get("authorUid"),
+      answer: doc.get("answer") ?? null,
+      answeredAt: doc.get("answeredAt")?.toDate?.()?.toISOString?.() ?? null,
+      createdAt: doc.get("createdAt")?.toDate?.()?.toISOString?.() ?? null,
+    }))
+    // Filtra: ou é publica, ou é privada do próprio usuário
+    .filter((q) =>
+      q.visibility === QuestionVisibility.PUBLICA || q.authorUid === uid
+    )
+    // Remove o authorUid antes de devolver (não expõe pro front)
+    .map(({authorUid, ...rest}) => rest)
+    .sort((left, right) =>
+      String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? ""))
+    );
+}
+
+/**
+ * Marca um usuário como investidor de uma startup.
+ *
+ * Esta função existe para ser usada pelo handler de compra de tokens
+ * (módulo exchange, a ser implementado). Ela cria — ou atualiza, via
+ * `merge: true` — o documento em `startups/{startupId}/investors/{uid}`.
+ *
+ * A simples existência deste documento é o que destrava as funcionalidades
+ * de investidor: compra/venda de tokens e envio de perguntas privadas.
+ *
+ * Também é usada pelo handler `seedTestInvestor` para fins de teste em
+ * ambiente de emulator.
+*/
+export async function addUserAsInvestor(
+  startupId: string,
+  uid: string,
+  data: {
+    tokensOwned?: number;
+    totalInvestedCents?: number;
+    email?: string;
+  } = {}
+): Promise<void> {
+  const investorRef = startupsCollection
+    .doc(startupId)
+    .collection("investors")
+    .doc(uid);
+
+  await investorRef.set({
+    uid,
+    email: data.email ?? null,
+    tokensOwned: data.tokensOwned ?? 0,
+    totalInvestedCents: data.totalInvestedCents ?? 0,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
 }
