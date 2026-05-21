@@ -17,7 +17,15 @@ export type TokenTransactionDocument = {
   createdAt?: Timestamp,
 }
 
-
+export type ExchangeDocument = {
+  startupId: string,
+  startupName: string,
+  tokenOwnerId: string,
+  quantity: number,
+  averagePurchasePriceCents: number,
+  currentPriceCents: number,
+  createdAt?: Timestamp,
+}
 
 /*
 startupId: string,

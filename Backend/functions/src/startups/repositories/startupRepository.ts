@@ -4,7 +4,8 @@ RA: 24025832
 */
 
 import {FieldValue} from "firebase-admin/firestore";
-import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument } from "../types";
+import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument,  } from "../types";
+import { ExchangeDocument } from "../../exchange/types";
 import { db } from "../shared/firebase";
 
 const startupsCollection = db.collection("startups");
@@ -397,4 +398,16 @@ export async function listPublicQuestions(startupId: string) {
     .sort((left, right) =>
       String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? ""))
     );
+}
+
+export async function listStartupExchanges(startupId: string): Promise<ExchangeDocument[]> {
+  const exchangesSnapshot = await startupsCollection
+    .doc(startupId)
+    .collection("exchanges")
+    .get();
+
+  return exchangesSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as ExchangeDocument),
+  }));
 }
