@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../firebase_options.dart';
 
 class FirebaseSetup {
-  static const bool usarEmulador = true;
+  static const bool usarEmulador = false;
 
   static Future<void> inicializar() async {
     await Firebase.initializeApp(

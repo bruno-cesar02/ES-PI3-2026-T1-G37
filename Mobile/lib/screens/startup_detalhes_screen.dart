@@ -35,6 +35,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage>
   String?      _pitchDeckUrl;
   String?      _coverImageUrl;
   List<String> _tags                   = [];
+  int          _walletBalanceCents     = 0;
 
   static const _tabLabels = ['Geral', 'Financeiro', 'Sócios', 'Perguntas', 'Mídia'];
   static const _tabIcons  = [
@@ -57,6 +58,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage>
         _startup = r.startup; _isInvestor = r.isInvestor; _canTradeTokens = r.canTradeTokens;
         _canSendPrivateQuestions = r.canSendPrivateQuestions; _demoVideos = r.demoVideos;
         _pitchDeckUrl = r.pitchDeckUrl; _coverImageUrl = r.coverImageUrl; _tags = r.tags;
+        _walletBalanceCents = r.walletBalanceCents;
       });
     } catch (e) { if (mounted) setState(() => _error = e.toString()); }
     finally { if (mounted) setState(() => _loading = false); }
@@ -156,7 +158,13 @@ class _StartupDetailsPageState extends State<StartupDetailsPage>
           _buildTabBar(),
           Expanded(child: TabBarView(controller: _tabController, children: [
             AbaGeral(startup: _startup!),
-            AbaFinanceiro(startup: _startup!, isInvestor: _isInvestor, canTradeTokens: _canTradeTokens),
+            AbaFinanceiro(
+              startup: _startup!,
+              isInvestor: _isInvestor,
+              canTradeTokens: _canTradeTokens,
+              walletBalanceCents: _walletBalanceCents,
+              onTransacaoConcluida: _buscarDados,
+            ),
             AbaSocios(startup: _startup!),
             AbaPerguntas(startup: _startup!, canSendPrivateQuestions: _canSendPrivateQuestions,
                 service: StartupService.instance, onRecarregar: _buscarDados),

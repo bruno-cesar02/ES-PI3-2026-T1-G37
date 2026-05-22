@@ -1,5 +1,5 @@
 /* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Financeiro — métricas financeiras e botão de investimento. */
+   Aba Financeiro — métricas financeiras e botões de compra/venda de tokens. */
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';
@@ -12,8 +12,17 @@ class AbaFinanceiro extends StatelessWidget {
   final Startup startup;
   final bool isInvestor;
   final bool canTradeTokens;
+  final int walletBalanceCents;
+  final VoidCallback onTransacaoConcluida;
 
-  const AbaFinanceiro({super.key, required this.startup, required this.isInvestor, required this.canTradeTokens});
+  const AbaFinanceiro({
+    super.key,
+    required this.startup,
+    required this.isInvestor,
+    required this.canTradeTokens,
+    required this.walletBalanceCents,
+    required this.onTransacaoConcluida,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,12 +31,12 @@ class AbaFinanceiro extends StatelessWidget {
 
     return ListView(padding: const EdgeInsets.all(16), children: [
       GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.4, children: [
-          _FinCard(label: 'Capital Aportado', valor: startup.capitalAportado, sub: 'Simulado'),
-          _FinCard(label: 'Tokens Restantes', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
-          _FinCard(label: 'Previsão Receita', valor: startup.previsaoReceita, sub: '2026'),
-          _FinCard(label: 'Margem Bruta', valor: startup.margemBrutaAlvo, sub: 'Alvo'),
-        ]),
+          mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.4, children: [
+            _FinCard(label: 'Capital Aportado', valor: startup.capitalAportado, sub: 'Simulado'),
+            _FinCard(label: 'Tokens Restantes', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
+            _FinCard(label: 'Previsão Receita', valor: startup.previsaoReceita, sub: '2026'),
+            _FinCard(label: 'Margem Bruta', valor: startup.margemBrutaAlvo, sub: 'Alvo'),
+          ]),
       const SizedBox(height: 12),
       DetalhesCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -36,33 +45,45 @@ class AbaFinanceiro extends StatelessWidget {
         ]),
         const SizedBox(height: 8),
         ClipRRect(borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(value: cpvFraction, minHeight: 6,
-            backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary))),
+            child: LinearProgressIndicator(value: cpvFraction, minHeight: 6,
+                backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary))),
       ])),
       if (isInvestor) ...[
         const SizedBox(height: 12),
         Container(padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.positive.withOpacity(0.08),
-            border: Border.all(color: AppColors.positive.withOpacity(0.2)), borderRadius: BorderRadius.circular(16)),
-          child: const Row(children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.positive, size: 20), SizedBox(width: 12),
-            Text('Você é investidor desta startup', style: TextStyle(color: AppColors.positive, fontSize: 14, fontWeight: FontWeight.w700)),
-          ])),
+            decoration: BoxDecoration(color: AppColors.positive.withOpacity(0.08),
+                border: Border.all(color: AppColors.positive.withOpacity(0.2)), borderRadius: BorderRadius.circular(16)),
+            child: Row(children: [
+              const Icon(Icons.check_circle_rounded, color: AppColors.positive, size: 20),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Você é investidor desta startup',
+                    style: TextStyle(color: AppColors.positive, fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text('Você possui ${startup.userTokensOwned} ${startup.userTokensOwned == 1 ? "token" : "tokens"}',
+                    style: TextStyle(color: AppColors.positive.withOpacity(0.85), fontSize: 12)),
+              ])),
+            ])),
       ],
-      const SizedBox(height: 12),
-      const SizedBox(height: 12),
+      const SizedBox(height: 24),
       Row(
         children: [
-          // Botão de Comprar
+          // Botão Comprar — sempre disponível
           Expanded(
             child: GestureDetector(
-              onTap: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-                  builder: (_) => ModalInvestimento(startup: startup)
-              ),
+              onTap: () async {
+                final result = await showModalBottomSheet<bool>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+                    builder: (_) => ModalInvestimento(
+                      startup: startup,
+                      walletBalanceCents: walletBalanceCents,
+                    )
+                );
+                if (result == true) onTransacaoConcluida();
+              },
               child: Container(
                   height: 56,
                   decoration: BoxDecoration(
@@ -76,18 +97,21 @@ class AbaFinanceiro extends StatelessWidget {
               ),
             ),
           ),
-          // Botão de Vender (visível apenas se for investidor ou puder negociar)
-          if (!isInvestor || canTradeTokens) ...[
+          // Botão Vender — SÓ se for investidor E puder negociar
+          if (isInvestor && canTradeTokens) ...[
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                onTap: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.white,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-                    builder: (_) => ModalVenda(startup: startup)
-                ),
+                onTap: () async {
+                  final result = await showModalBottomSheet<bool>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+                      builder: (_) => ModalVenda(startup: startup)
+                  );
+                  if (result == true) onTransacaoConcluida();
+                },
                 child: Container(
                     height: 56,
                     decoration: BoxDecoration(
@@ -118,13 +142,13 @@ class _FinCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.cardBg, border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(16)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(color: Color(0xFF515151), fontSize: 11)),
-        const SizedBox(height: 4),
-        Text(valor, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 2),
-        Text(sub, style: const TextStyle(color: Color(0xFF707070), fontSize: 10)),
-      ]));
+        decoration: BoxDecoration(color: AppColors.cardBg, border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(16)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(color: Color(0xFF515151), fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(valor, style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(sub, style: const TextStyle(color: Color(0xFF707070), fontSize: 10)),
+        ]));
   }
 }

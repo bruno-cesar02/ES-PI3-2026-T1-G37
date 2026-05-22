@@ -3,23 +3,53 @@
 
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/startup_model.dart';
+import 'getWalletDataService.dart';
 
 class StartupService {
   static final StartupService instance = StartupService._();
   StartupService._();
 
   final _functions = FirebaseFunctions.instanceFor(region: 'southamerica-east1');
+  final _walletService = GetWalletDataService();
 
+  /// Busca detalhes da startup e o saldo da carteira em paralelo.
+  /// As duas chamadas rodam ao mesmo tempo pra acelerar o carregamento.
   Future<StartupDetailsResult> getStartupDetails(String startupId) async {
     final callable = _functions.httpsCallable('getStartupDetails');
-    final result = await callable.call({'id': startupId});
-    final raw = Map<String, dynamic>.from(result.data as Map);
+
+    // Dispara as duas chamadas em paralelo.
+    final detailsFuture = callable.call({'id': startupId});
+    final walletFuture = _walletService.fetchWalletDetails();
+
+    final results = await Future.wait([detailsFuture, walletFuture]);
+
+    final detailsResult = results[0] as HttpsCallableResult;
+    final walletData = results[1] as Map<String, dynamic>?;
+
+    final raw = Map<String, dynamic>.from(detailsResult.data as Map);
     final data = Map<String, dynamic>.from(raw['data'] as Map);
-    print('DADOS RECEBIDOS: $data');
-    return _mapToResult(data);
+
+    // Saldo da carteira em centavos. Se a chamada falhou, assume 0
+    // (pode acontecer se a carteira ainda não foi inicializada).
+    final balanceCents = _extractBalanceCents(walletData);
+
+    return _mapToResult(data, balanceCents);
   }
 
-  
+  int _extractBalanceCents(Map<String, dynamic>? walletData) {
+    if (walletData == null) return 0;
+    // O retorno do getWalletDetails pode vir em formatos diferentes.
+    // Tentamos as variações mais comuns sem quebrar se nada bater.
+    final wallet = walletData['wallet'];
+    if (wallet is Map) {
+      final balance = wallet['balanceCents'];
+      if (balance is num) return balance.toInt();
+    }
+    final direct = walletData['balanceCents'];
+    if (direct is num) return direct.toInt();
+    return 0;
+  }
+
   Future<void> createStartupQuestion({
     required String startupId,
     required String text,
@@ -77,6 +107,7 @@ class StartupDetailsResult {
   final String? pitchDeckUrl;
   final String? coverImageUrl;
   final List<String> tags;
+  final int walletBalanceCents;
 
   const StartupDetailsResult({
     required this.startup,
@@ -87,10 +118,11 @@ class StartupDetailsResult {
     required this.pitchDeckUrl,
     required this.coverImageUrl,
     required this.tags,
+    required this.walletBalanceCents,
   });
 }
 
-StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
+StartupDetailsResult _mapToResult(Map<String, dynamic> data, int balanceCents) {
   final access = Map<String, dynamic>.from(data['access'] as Map? ?? {});
   final isInvestor = access['isInvestor'] as bool? ?? false;
   final canTradeTokens = access['canTradeTokens'] as bool? ?? false;
@@ -101,6 +133,7 @@ StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
   final coverImageUrl = data['coverImageUrl'] as String?;
   final tags = (data['tags'] as List? ?? []).map((t) => t.toString()).toList();
 
+  final userTokensOwned = (data['userTokensOwned'] as num? ?? 0).toInt();
 
   final listaSocios = data['founder'] ?? data['founders'] ?? [];
 
@@ -109,7 +142,6 @@ StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
     return Socio(
       nome: founder['name'] as String? ?? '',
       cargo: founder['role'] as String? ?? '',
-      // Busca por 'equityPercentage' ou 'equityPercent'
       percentual: (founder['equityPercentage'] as num? ?? founder['equityPercent'] as num? ?? 0).toInt(),
       descricao: founder['bio'] as String? ?? '',
       avatar: _initials(founder['name'] as String? ?? ''),
@@ -126,20 +158,20 @@ StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
     );
   }).toList();
 
-final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
-  final question = Map<String, dynamic>.from(q as Map);
-  final visibilityStr = question['visibility'] as String? ?? 'publica';
-  return Pergunta(
-    id: question['id'] as String? ?? '',
-    pergunta: question['text'] as String? ?? '',
-    resposta: question['answer'] as String? ?? 'Sem resposta ainda.',
-    likes: 0,
-    comments: 0,
-    visibility: visibilityStr == 'privada'
-        ? QuestionVisibility.privada
-        : QuestionVisibility.publica,
-  );
-}).toList();
+  final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
+    final question = Map<String, dynamic>.from(q as Map);
+    final visibilityStr = question['visibility'] as String? ?? 'publica';
+    return Pergunta(
+      id: question['id'] as String? ?? '',
+      pergunta: question['text'] as String? ?? '',
+      resposta: question['answer'] as String? ?? 'Sem resposta ainda.',
+      likes: 0,
+      comments: 0,
+      visibility: visibilityStr == 'privada'
+          ? QuestionVisibility.privada
+          : QuestionVisibility.publica,
+    );
+  }).toList();
 
   final geral = <SecaoGeral>[
     if (_notEmpty(data['executiveSummary']))
@@ -175,6 +207,7 @@ final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
     perguntas: perguntas,
     geral: geral,
     materiais: [],
+    userTokensOwned: userTokensOwned,
   );
 
   return StartupDetailsResult(
@@ -186,6 +219,7 @@ final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
     pitchDeckUrl: pitchDeckUrl,
     coverImageUrl: coverImageUrl,
     tags: tags,
+    walletBalanceCents: balanceCents,
   );
 }
 

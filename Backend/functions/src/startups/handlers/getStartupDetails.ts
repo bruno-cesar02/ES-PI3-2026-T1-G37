@@ -1,10 +1,12 @@
 /* Bruno César Gonçalves Lima Mota
    RA: 24795502
-   Detalhes da startup — agora traz perguntas privadas para investidores. */
+   Detalhes da startup — agora traz perguntas privadas para investidores e
+   quantidade de tokens que o usuário possui daquela startup. */
 
 import {HttpsError, onCall} from "firebase-functions/https";
 import {requireAuthenticatedUser} from "../../users/shared/auth";
 import {normalizeString} from "../shared/validation";
+import {db} from "../shared/firebase";
 import {
   getStartupById,
   listPublicQuestions,
@@ -27,6 +29,10 @@ import {
  * - Se o usuário NÃO é investidor: retorna apenas perguntas públicas.
  * - Se o usuário É investidor: retorna públicas + privadas, e cada item
  *   carrega o campo `visibility` para que o app possa diferenciar.
+ *
+ * Também retorna `userTokensOwned`: quantidade de tokens que o próprio
+ * usuário possui daquela startup. Usado pelo modal de venda no front
+ * para evitar uma segunda chamada e mostrar o saldo de tokens.
 */
 export const getStartupDetails = onCall(async (request) => {
   const user = requireAuthenticatedUser(request);
@@ -52,6 +58,20 @@ export const getStartupDetails = onCall(async (request) => {
     ? await listInvestorVisibleQuestions(startupId, user.uid)
     : await listPublicQuestions(startupId);
 
+  // Quantidade de tokens que o próprio usuário possui desta startup.
+  // Lido do documento `users/{uid}/invested/{startupId}` mantido pelo
+  // módulo exchange. Retorna 0 se nunca comprou ou se vendeu tudo.
+  const investedSnap = await db
+    .collection("users")
+    .doc(user.uid)
+    .collection("invested")
+    .doc(startupId)
+    .get();
+
+  const userTokensOwned = investedSnap.exists
+    ? (investedSnap.get("quantity") as number) ?? 0
+    : 0;
+
   return {
     data: {
       id: startupId,
@@ -59,6 +79,7 @@ export const getStartupDetails = onCall(async (request) => {
       createdAt: startup.createdAt?.toDate().toISOString() ?? null,
       updatedAt: startup.updatedAt?.toDate().toISOString() ?? null,
       publicQuestions: questions,
+      userTokensOwned,
       access: {
         isInvestor,
         canTradeTokens: isInvestor,

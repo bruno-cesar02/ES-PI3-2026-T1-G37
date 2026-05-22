@@ -87,6 +87,7 @@ class Startup {
   final List<Pergunta> perguntas;
   final List<SecaoGeral> geral;
   final List<MaterialAnexo> materiais;
+  final int userTokensOwned;
 
   const Startup({
     required this.id,
@@ -110,6 +111,7 @@ class Startup {
     required this.perguntas,
     required this.geral,
     required this.materiais,
+    required this.userTokensOwned,
   });
 }
 
