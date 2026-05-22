@@ -32,6 +32,40 @@ class StartupService {
       'visibility': visibility,
     });
   }
+
+  Future<void> buyStartupToken({
+    required String startupId,
+    required String startupName,
+    required int currentTokenPriceCents,
+    required int tokenAmount,
+    required int totalPriceCents,
+  }) async {
+    final callable = _functions.httpsCallable('buyStartupToken');
+    await callable.call({
+      'startupId': startupId,
+      'startupName': startupName,
+      'currentTokenPriceCents': currentTokenPriceCents,
+      'tokenAmount': tokenAmount,
+      'totalPriceCents': totalPriceCents,
+    });
+  }
+
+  Future<void> sellStartupToken({
+    required String startupId,
+    required String startupName,
+    required int currentTokenPriceCents,
+    required int tokenAmount,
+    required int totalPriceCents,
+  }) async {
+    final callable = _functions.httpsCallable('sellStartupToken');
+    await callable.call({
+      'startupId': startupId,
+      'startupName': startupName,
+      'currentTokenPriceCents': currentTokenPriceCents,
+      'tokenAmount': tokenAmount,
+      'totalPriceCents': totalPriceCents,
+    });
+  }
 }
 
 class StartupDetailsResult {
@@ -92,16 +126,20 @@ StartupDetailsResult _mapToResult(Map<String, dynamic> data) {
     );
   }).toList();
 
-  final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
-    final question = Map<String, dynamic>.from(q as Map);
-    return Pergunta(
-      id: question['id'] as String? ?? '',
-      pergunta: question['text'] as String? ?? '',
-      resposta: question['answer'] as String? ?? 'Sem resposta ainda.',
-      likes: 0,
-      comments: 0,
-    );
-  }).toList();
+final perguntas = (data['publicQuestions'] as List? ?? []).map((q) {
+  final question = Map<String, dynamic>.from(q as Map);
+  final visibilityStr = question['visibility'] as String? ?? 'publica';
+  return Pergunta(
+    id: question['id'] as String? ?? '',
+    pergunta: question['text'] as String? ?? '',
+    resposta: question['answer'] as String? ?? 'Sem resposta ainda.',
+    likes: 0,
+    comments: 0,
+    visibility: visibilityStr == 'privada'
+        ? QuestionVisibility.privada
+        : QuestionVisibility.publica,
+  );
+}).toList();
 
   final geral = <SecaoGeral>[
     if (_notEmpty(data['executiveSummary']))

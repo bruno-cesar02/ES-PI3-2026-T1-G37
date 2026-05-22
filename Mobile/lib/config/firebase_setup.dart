@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../firebase_options.dart';
 
 class FirebaseSetup {
-  static const bool usarEmulador = false;
+  static const bool usarEmulador = true;
 
   static Future<void> inicializar() async {
     await Firebase.initializeApp(
@@ -30,6 +30,12 @@ class FirebaseSetup {
       FirebaseFunctions.instanceFor(region: 'southamerica-east1')
           .useFunctionsEmulator(host, 5001);
       print('✅ MODO DEV: Conectado ao Emulador Local!');
+      print('═══════════════════════════════════════════');
+      print('🔥 MODO EMULADOR ATIVO — host: $host');
+      print('   Firestore: $host:8080');
+      print('   Auth:      $host:9099');
+      print('   Functions: $host:5001');
+      print('═══════════════════════════════════════════');
     } catch (e) {
       print('❌ Erro ao conectar no emulador: $e');
     }

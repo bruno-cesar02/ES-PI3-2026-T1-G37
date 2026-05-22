@@ -6,6 +6,7 @@ import '../../models/startup_model.dart';
 import '../../theme/app_colors.dart';
 import 'detalhes_helpers.dart';
 import 'modal_investimento.dart';
+import 'modal_venda.dart';
 
 class AbaFinanceiro extends StatelessWidget {
   final Startup startup;
@@ -23,7 +24,7 @@ class AbaFinanceiro extends StatelessWidget {
       GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.4, children: [
           _FinCard(label: 'Capital Aportado', valor: startup.capitalAportado, sub: 'Simulado'),
-          _FinCard(label: 'Tokens Emitidos', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
+          _FinCard(label: 'Tokens Restantes', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
           _FinCard(label: 'Previsão Receita', valor: startup.previsaoReceita, sub: '2026'),
           _FinCard(label: 'Margem Bruta', valor: startup.margemBrutaAlvo, sub: 'Alvo'),
         ]),
@@ -49,17 +50,59 @@ class AbaFinanceiro extends StatelessWidget {
           ])),
       ],
       const SizedBox(height: 12),
-      GestureDetector(
-        onTap: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.white,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-          builder: (_) => ModalInvestimento(startup: startup)),
-        child: Container(width: double.infinity, height: 56,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary, AppColors.primaryDark]),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 6))]),
-          child: Center(child: Text(isInvestor ? 'Comprar mais tokens' : 'Simular Investimento',
-            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)))),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          // Botão de Comprar
+          Expanded(
+            child: GestureDetector(
+              onTap: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+                  builder: (_) => ModalInvestimento(startup: startup)
+              ),
+              child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                      gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary, AppColors.primaryDark]),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 6))]
+                  ),
+                  child: const Center(
+                      child: Text('Comprar', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700))
+                  )
+              ),
+            ),
+          ),
+          // Botão de Vender (visível apenas se for investidor ou puder negociar)
+          if (!isInvestor || canTradeTokens) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+                    builder: (_) => ModalVenda(startup: startup)
+                ),
+                child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: AppColors.primary, width: 2),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
+                        child: Text('Vender', style: TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.w700))
+                    )
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       const SizedBox(height: 16),
     ]);

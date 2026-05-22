@@ -4,9 +4,15 @@ RA: 24025832
 */
 
 import {FieldValue} from "firebase-admin/firestore";
-import { StartupDocument, StartupListItem, StartupStages, StartupQuestionDocument,  } from "../types";
 import { ExchangeDocument } from "../../exchange/types";
 import { db } from "../shared/firebase";
+import {
+  StartupDocument,
+  StartupListItem,
+  StartupStages,
+  StartupQuestionDocument,
+  QuestionVisibility,
+} from "../types";
 
 const startupsCollection = db.collection("startups");
 
@@ -376,7 +382,13 @@ export async function userIsInvestor(startupId: string, uid: string): Promise<bo
     .collection("investors")
     .doc(uid)
     .get();
-  return investorSnapshot.exists;
+
+  if (!investorSnapshot.exists) {
+    return false;
+  }
+
+  const tokensOwned = (investorSnapshot.get("tokensOwned") as number) ?? 0;
+  return tokensOwned > 0;
 }
 
 export async function listPublicQuestions(startupId: string) {
@@ -411,3 +423,150 @@ export async function listStartupExchanges(startupId: string): Promise<ExchangeD
     ...(doc.data() as ExchangeDocument),
   }));
 }
+
+
+/**
+ * Lista as perguntas que o usuário pode ver para essa startup:
+ * - Todas as públicas (visíveis a qualquer pessoa).
+ * - Apenas as privadas em que o próprio usuário é o autor.
+ *
+ * Usado quando o solicitante é investidor da startup.
+*/
+export async function listInvestorVisibleQuestions(
+  startupId: string,
+  uid: string
+) {
+  const questionsSnapshot = await startupsCollection
+    .doc(startupId)
+    .collection("questions")
+    .limit(100)
+    .get();
+
+  return questionsSnapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      text: doc.get("text"),
+      visibility: doc.get("visibility") ?? QuestionVisibility.PUBLICA,
+      authorUid: doc.get("authorUid"),
+      answer: doc.get("answer") ?? null,
+      answeredAt: doc.get("answeredAt")?.toDate?.()?.toISOString?.() ?? null,
+      createdAt: doc.get("createdAt")?.toDate?.()?.toISOString?.() ?? null,
+    }))
+    // Filtra: ou é publica, ou é privada do próprio usuário
+    .filter((q) =>
+      q.visibility === QuestionVisibility.PUBLICA || q.authorUid === uid
+    )
+    // Remove o authorUid antes de devolver (não expõe pro front)
+    .map(({authorUid, ...rest}) => rest)
+    .sort((left, right) =>
+      String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? ""))
+    );
+}
+
+/**
+ * Adiciona ou atualiza o saldo de um investidor em uma startup.
+ *
+ * Esta função é a fonte única de verdade para gravação na subcoleção
+ * `startups/{startupId}/investors/{uid}`. Ela usa `FieldValue.increment()`
+ * para somar os valores recebidos ao saldo existente, então pode ser
+ * chamada com segurança em qualquer compra — primeira ou subsequente.
+ *
+ * O `merge: true` garante que dados existentes (como `createdAt`) sejam
+ * preservados nas operações subsequentes.
+ *
+ * Usada por:
+ * - `buyTokens` no exchange: ao registrar compra direta.
+ * - `acceptExchange` no exchange: ao registrar lado comprador da troca P2P.
+ * - `seedTestInvestor`: para fins de teste no emulador.
+*/
+export async function addUserAsInvestor(
+  startupId: string,
+  uid: string,
+  data: {
+    tokensOwned: number;
+    totalInvestedCents: number;
+    email?: string;
+  }
+): Promise<void> {
+  const investorRef = startupsCollection
+    .doc(startupId)
+    .collection("investors")
+    .doc(uid);
+
+  const snapshot = await investorRef.get();
+
+  if (!snapshot.exists) {
+    // Primeira vez como investidor desta startup
+    await investorRef.set({
+      uid,
+      email: data.email ?? null,
+      tokensOwned: data.tokensOwned,
+      totalInvestedCents: data.totalInvestedCents,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  } else {
+    // Já é (ou foi) investidor — incrementa os saldos
+    await investorRef.update({
+      tokensOwned: FieldValue.increment(data.tokensOwned),
+      totalInvestedCents: FieldValue.increment(data.totalInvestedCents),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+}
+
+/**
+ * Atualiza o saldo de um investidor após uma venda (parcial ou total).
+ *
+ * Decrementa `tokensOwned` e `totalInvestedCents`. O documento NÃO é
+ * apagado mesmo se `tokensOwned` chegar a zero — mantemos o histórico
+ * de "já foi investidor" da startup para fins de auditoria e dashboards
+ * futuros. Como o `userIsInvestor` checa `tokensOwned > 0`, o usuário
+ * deixa de ser considerado investidor automaticamente.
+ *
+ * Valida que o decremento não tornaria o saldo negativo. Se isso acontecer,
+ * lança erro — sinal de que algo upstream está errado.
+ *
+ * Usada por:
+ * - `sellTokens` no exchange: ao registrar venda direta.
+ * - `recordExchange` no exchange: ao registrar criação de oferta no balcão
+ *   (tokens vão para escrow).
+ * - `acceptExchange` no exchange: ao registrar lado vendedor da troca P2P.
+*/
+export async function removeTokensFromInvestor(
+  startupId: string,
+  uid: string,
+  data: {
+    tokensSold: number;
+    valueReceivedCents: number;
+  }
+): Promise<void> {
+  const investorRef = startupsCollection
+    .doc(startupId)
+    .collection("investors")
+    .doc(uid);
+
+  const snapshot = await investorRef.get();
+
+  if (!snapshot.exists) {
+    throw new Error(
+      `Usuario ${uid} nao consta como investidor da startup ${startupId}.`
+    );
+  }
+
+  const currentTokens = (snapshot.get("tokensOwned") as number) ?? 0;
+
+  if (data.tokensSold > currentTokens) {
+    throw new Error(
+      `Tentativa de vender ${data.tokensSold} tokens, mas o investidor ` +
+      `possui apenas ${currentTokens}.`
+    );
+  }
+
+  await investorRef.update({
+    tokensOwned: FieldValue.increment(-data.tokensSold),
+    totalInvestedCents: FieldValue.increment(-data.valueReceivedCents),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
+ 
