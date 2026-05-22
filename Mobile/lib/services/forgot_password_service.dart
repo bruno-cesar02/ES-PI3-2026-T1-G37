@@ -1,34 +1,25 @@
 /* Seu Nome - RA: XXXXXXXX */
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordService {
-
-  /// Verifica se o e-mail existe no banco
-  static Future<bool> verificarEmail({required String email}) async {
-    try {
-      final callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1')
-          .httpsCallable('checkEmail');
-      await callable.call({'email': email});
-      return true;
-    } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'Erro desconhecido.');
-    } catch (e) {
-      throw Exception('Erro de conexão: Verifique sua internet.');
-    }
-  }
-
-  /// Altera a senha do usuário
-  static Future<bool> alterarSenha({
+  /// Envia e-mail de recuperação de senha usando o Firebase Auth.
+  static Future<bool> enviarEmailRecuperacao({
     required String email,
-    required String novaSenha,
   }) async {
     try {
-      final callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1')
-          .httpsCallable('resetPassword');
-      await callable.call({'email': email, 'novaSenha': novaSenha});
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: email,
+        actionCodeSettings: ActionCodeSettings(
+          url: 'https://pi3-g37.web.app',
+          handleCodeInApp: false,
+        ),
+      );
       return true;
-    } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'Erro desconhecido.');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        return true; // Por segurança retorna sucesso
+      }
+      throw Exception(e.message ?? 'Erro ao enviar e-mail.');
     } catch (e) {
       throw Exception('Erro de conexão: Verifique sua internet.');
     }
