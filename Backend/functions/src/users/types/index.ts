@@ -18,6 +18,11 @@ export type UserDocument = {
   celular: string;
   createdAt: FieldValue | Timestamp;
   mfaEnabled: boolean; // Já deixamos pronto para a Autenticação de 2 Fatores
+  wallet: {
+        balanceCents: 0,
+        totalProfitLoss: 0,
+        totalequity: 0,
+      }
 };
 
 export type AuthenticatedUser = {
