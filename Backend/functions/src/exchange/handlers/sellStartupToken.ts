@@ -3,6 +3,8 @@ Nome: Otávio Augusto Antunes Marquez
 RA: 24025832
 */
 
+/*
+
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { requireAuthenticatedUser } from "../../users/shared/auth";
 import { TokenTransactionDocument } from "../types";
@@ -38,4 +40,4 @@ export const sellStartupToken = onCall(async (req) => {
     throw new HttpsError("internal", "Erro ao processar venda de tokens.", error instanceof Error ? error.message : String(error));
   }
 
-});
+});*/

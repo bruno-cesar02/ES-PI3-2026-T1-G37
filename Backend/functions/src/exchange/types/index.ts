@@ -24,6 +24,7 @@ export type ExchangeDocument = {
   quantity: number,
   averagePurchasePriceCents: number,
   currentPriceCents: number,
+  purchasePriceCents?: number,
   createdAt?: Timestamp,
 }
 

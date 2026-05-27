@@ -14,73 +14,27 @@ import {
 import { ExchangeDocument } from "../types";
 
 
-export async function sellTokens(userId: string, startupId: string, tokenAmount: number, startupName: string, currentPriceCents: number) {
+export async function buyTokens(userId: string, startupId: string, tokenAmount: number) {
 
-  const totalPriceCents = tokenAmount * currentPriceCents;
+  
 
-  if (!userId || !startupId || !tokenAmount || tokenAmount <= 0 || !startupName || !currentPriceCents || currentPriceCents <= 0) {
-    throw new HttpsError("invalid-argument", "Parâmetros insuficientes para venda de tokens.");
-  }
-
-  const userWalletRef = db.collection("users").doc(userId);
-  const tokensRef = await userWalletRef.collection("invested").doc(startupId).get();
-  const walletRef = await userWalletRef.get();
-
-   if (!walletRef.exists) {
-    throw new HttpsError("not-found", "Carteira do usuário não encontrada.");
-  }
-
-  if(tokensRef.exists) {
-    updateTokenIssues(startupId, tokenAmount, currentPriceCents);
-    const tokenData = tokensRef.data();
-    if(tokenData && tokenData.quantity >= tokenAmount) {
-      if (tokenData.quantity === tokenAmount) {
-        
-        await tokensRef.ref.delete();
-
-      } else {
-        await tokensRef.ref.update({
-          quantity: tokenData.quantity - tokenAmount,
-          averagePurchasePriceCents: ((tokensRef.data()?.averagePurchasePriceCents || 0) * (tokensRef.data()?.quantity || 0) + totalPriceCents) / ((tokensRef.data()?.quantity || 0) + tokenAmount),
-          currentPriceCents: currentPriceCents,
-          totalPriceCents: totalPriceCents,
-        } as TokenHolding);
-      }
-      await userWalletRef.collection("transactions").doc().set({
-          type: "venda",
-          startupId,
-          startupName: startupName,
-          quantity: tokenAmount,
-          priceCents: currentPriceCents, 
-          date: FieldValue.serverTimestamp(),
-        } as WalletTransaction);
-
-      await updateWalletBalance(userId, totalPriceCents);
-
-      await removeTokensFromInvestor(startupId, userId, {
-        tokensSold: tokenAmount,
-        valueReceivedCents: totalPriceCents,
-      });
-    } else {
-      throw new HttpsError("failed-precondition", "Quantidade de tokens insuficiente para venda.");
-    }
-  } else {
-    throw new HttpsError("not-found", "Tokens não encontrados para venda.");
-  }
-}
-
-
-export async function buyTokens(userId: string, startupId: string, startupName: string, tokenAmount: number, currentPriceCents: number) {
-
-  const totalPriceCents = tokenAmount * currentPriceCents;
-
-  if (!userId || !startupId || !startupName || !tokenAmount || tokenAmount <= 0 || !currentPriceCents || currentPriceCents <= 0) {
+  if (!userId || !startupId || !tokenAmount || tokenAmount <= 0) {
     throw new HttpsError("invalid-argument", "Parâmetros insuficientes para compra de tokens.");
   }
 
   const userWalletRef = db.collection("users").doc(userId);
   const tokensRef = await userWalletRef.collection("invested").doc(startupId).get();
   const walletRef = await userWalletRef.get();
+  const startupRef = db.collection("startups").doc(startupId);
+  const startupDoc = await startupRef.get();
+
+
+  const totalPriceCents = tokenAmount * startupDoc.data()?.currentTokenPriceCents;
+
+
+  if (!startupDoc.exists) {
+    throw new HttpsError("not-found", "Startup não encontrada para compra de tokens.");
+  }
 
    if (!walletRef.exists) {
     throw new HttpsError("not-found", "Carteira do usuário não encontrada.");
@@ -90,21 +44,29 @@ export async function buyTokens(userId: string, startupId: string, startupName: 
     throw new HttpsError("failed-precondition", "Saldo insuficiente para compra de tokens.");
   }
 
+  updateTokenIssued(startupId, tokenAmount);
+
+
+  //const lucroPorToken = precoAtualDaStartup - averagePurchasePriceCents; 
+  // 1500 - 1300 = +200 centavos de lucro por token
+
+  //const lucroTotal = lucroPorToken * quantidadeDeTokensQueEleTem;
+  // 200 * 15 = +3000 centavos ($30.00 de lucro total)
+
   if(tokensRef.exists) {
-    updateTokenIssues(startupId, -tokenAmount, currentPriceCents);
     await tokensRef.ref.update({
       quantity: (tokensRef.data()?.quantity || 0) + tokenAmount,
       averagePurchasePriceCents: ((tokensRef.data()?.averagePurchasePriceCents || 0) * (tokensRef.data()?.quantity || 0) + totalPriceCents) / ((tokensRef.data()?.quantity || 0) + tokenAmount),
-      currentPriceCents: currentPriceCents,
+      currentPriceCents: startupDoc.data()?.currentTokenPriceCents,
       totalPriceCents: totalPriceCents + (tokensRef.data()?.totalPriceCents || 0),
     } as TokenHolding);
   } else {
     await userWalletRef.collection("invested").doc(startupId).set({
       startupId,
-      startupName,
+      startupName: startupDoc.data()?.name,
       quantity: tokenAmount,
       averagePurchasePriceCents: totalPriceCents / tokenAmount,
-      currentPriceCents: currentPriceCents,
+      currentPriceCents: startupDoc.data()?.currentTokenPriceCents,
       totalPriceCents: totalPriceCents,
     } as TokenHolding);
   }
@@ -112,13 +74,13 @@ export async function buyTokens(userId: string, startupId: string, startupName: 
   await userWalletRef.collection("transactions").doc().set({
     type: "compra",
     startupId,
-    startupName,
+    startupName: startupDoc.data()?.name,
     quantity: tokenAmount,
-    priceCents: totalPriceCents / tokenAmount, 
+    priceCents: startupDoc.data()?.currentTokenPriceCents,
     date: FieldValue.serverTimestamp(),
   } as WalletTransaction);
   
-  await updateWalletBalance(userId, -totalPriceCents);
+  await updateWalletBalance(userId, -totalPriceCents, true);
 
   const userEmail = walletRef.data()?.email as string | undefined;
 
@@ -130,7 +92,7 @@ export async function buyTokens(userId: string, startupId: string, startupName: 
 }
 
 
-export async function updateTokenIssues(startupId: string, tokensDiff: number, newCurrentPriceCents?: number) {
+export async function updateTokenIssued(startupId: string, tokensDiff: number) {
   const startupRef = db.collection("startups").doc(startupId);
   const startupDoc = await startupRef.get();
   
@@ -138,28 +100,25 @@ export async function updateTokenIssues(startupId: string, tokensDiff: number, n
     throw new HttpsError("not-found", "Startup não encontrada para atualização de tokens.");
   }
 
-  if (newCurrentPriceCents || newCurrentPriceCents !== undefined) {
-    await startupRef.update({
-      totalTokensIssued: FieldValue.increment(tokensDiff),
-      currentTokenPriceCents: newCurrentPriceCents,
-    });
-  } else {
-  await startupRef.update({
+  await startupDoc.ref.update({
     totalTokensIssued: FieldValue.increment(tokensDiff),
+    currentTokenPriceCents: (startupDoc.data()?.currentTokenPriceCents || 0) * Math.pow(1.01, tokensDiff)
   });
-  }
+
+  
 }
 
-export async function recordExchange(startupId: string, startupName: string, tokenOwnerId: string, quantity: number, averagePurchasePriceCents: number, currentPriceCents: number) {
+export async function recordExchange(startupId: string, tokenOwnerId: string, quantity: number, purchasePriceCents?: number) {
 
 
-  if (!startupId || !startupName || !tokenOwnerId || !quantity || quantity <= 0 || !averagePurchasePriceCents || averagePurchasePriceCents <= 0 || !currentPriceCents || currentPriceCents <= 0) {
+  if (!startupId || !tokenOwnerId || !quantity || quantity <= 0 || (purchasePriceCents && purchasePriceCents <= 0)) {
     throw new HttpsError("invalid-argument", "Parâmetros insuficientes para registro de troca de tokens.");
   }
 
   const startupInvested = await db.collection("users").doc(tokenOwnerId).collection("invested").doc(startupId).get();
   const startupRef = db.collection("startups").doc(startupId);
   const startupDoc = await startupRef.get();
+  
 
   if (!startupDoc.exists) {
     throw new HttpsError("not-found", "Startup não encontrada para registro de troca de tokens.");
@@ -169,13 +128,31 @@ export async function recordExchange(startupId: string, startupName: string, tok
     throw new HttpsError("not-found", "Investimento do usuário na startup não encontrado para registro de troca de tokens.");
   }
 
-  if (startupInvested.data()?.quantity < quantity) {
+  const currentPriceCents = startupDoc.data()?.currentTokenPriceCents || 0;
+  const currentQty = startupInvested.data()?.quantity || 0;
+  const currentAvgPrice = startupInvested.data()?.averagePurchasePriceCents || 0;
+
+  if (currentQty < quantity){
     throw new HttpsError("failed-precondition", "Quantidade de tokens insuficiente para registro de troca.");
   }
 
-  await startupInvested.ref.update({
-    quantity: FieldValue.increment(-quantity),
-  });
+  const newQty = currentQty - quantity;
+
+  if (newQty === 0) {
+    await startupInvested.ref.update({
+      quantity: 0,
+      currentPriceCents: currentPriceCents,
+      totalPriceCents: 0,
+    });
+  } else {
+
+    await startupInvested.ref.update({
+      quantity: newQty,
+      averagePurchasePriceCents: currentAvgPrice,
+      currentPriceCents: currentPriceCents,
+      totalPriceCents: newQty * currentPriceCents,
+    });
+  }
 
   // Tokens entram em escrow ao serem ofertados no balcão.
   // O usuário deixa de tê-los na carteira, portanto também não conta
@@ -188,13 +165,13 @@ export async function recordExchange(startupId: string, startupName: string, tok
 
   const exchangeData = {
     startupId,
-    startupName,
+    startupName : startupDoc.data()?.name || "",
     tokenOwnerId,
     quantity,
-    averagePurchasePriceCents,
-    currentPriceCents,
+    purchasePriceCents: purchasePriceCents,
+    currentPriceCents: currentPriceCents,
     createdAt: FieldValue.serverTimestamp(),
-  } as ExchangeDocument;
+  };
 
   await db.collection("startups").doc(startupId).collection("exchanges").doc().set(exchangeData);
 
@@ -202,6 +179,8 @@ export async function recordExchange(startupId: string, startupName: string, tok
 
 export async function deleteExchangeRecord(exchangeId: string, startupId: string) {
   const exchangeRef = db.collection("startups").doc(startupId).collection("exchanges").doc(exchangeId);
+  const startupRef = db.collection("startups").doc(startupId);
+  const startupDoc = await startupRef.get();
   const exchangeDoc = await exchangeRef.get();
 
   if (!exchangeDoc.exists) {
@@ -210,6 +189,8 @@ export async function deleteExchangeRecord(exchangeId: string, startupId: string
 
   await db.collection("users").doc(exchangeDoc.data()?.tokenOwnerId || "").collection("invested").doc(startupId).update({
     quantity: FieldValue.increment(exchangeDoc.data()?.quantity || 0),
+    currentPriceCents: startupDoc.data()?.currentTokenPriceCents || 0,
+    totalPriceCents: FieldValue.increment((exchangeDoc.data()?.quantity || 0) * (startupDoc.data()?.currentTokenPriceCents || 0)),
   });
 
     // Restaura a posição do investidor: oferta cancelada, tokens voltam.
@@ -229,10 +210,11 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
   const exchangeRef = db.collection("startups").doc(startupId).collection("exchanges").doc(exchangeId);
   const buyerRef = db.collection("users").doc(buyerId);
 
-  // Variáveis pra usar fora da transaction (atualizar saldo de investidor)
+  // Variáveis para atualizar a lista de investidores no final (fora da transaction)
   let sellerId: string = "";
   let quantitySold: number = 0;
   let valueExchangedCents: number = 0;
+  let buyerEmail: string | undefined = undefined;
 
   await db.runTransaction(async (transaction) => {
 
@@ -244,25 +226,21 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
     const exchangeData = exchangeDoc.data() as ExchangeDocument;
     sellerId = exchangeData.tokenOwnerId;
     quantitySold = exchangeData.quantity;
-    valueExchangedCents = exchangeData.quantity * exchangeData.currentPriceCents;
-
-    const sellerRef = db.collection("users").doc(sellerId);
-
+    
     if (buyerId === sellerId) {
       throw new HttpsError("invalid-argument", "Você não pode aceitar sua própria oferta.");
     }
 
-    const totalVolumeCents = exchangeData.quantity * exchangeData.currentPriceCents;
+    const pricePaidPerToken = exchangeData.purchasePriceCents || exchangeData.currentPriceCents;
+    const totalVolumeCents = quantitySold * pricePaidPerToken;
+    valueExchangedCents = totalVolumeCents; 
 
+    // 2. Lê a carteira do comprador
     const buyerDoc = await transaction.get(buyerRef);
-    const sellerInvestedRef = sellerRef.collection("invested").doc(startupId);
-    const sellerInvestedDoc = await transaction.get(sellerInvestedRef);
-    const buyerInvestedRef = buyerRef.collection("invested").doc(startupId);
-    const buyerInvestedDoc = await transaction.get(buyerInvestedRef);
-
+    buyerEmail = buyerDoc.get("email") as string | undefined;
     const buyerBalance = buyerDoc.get("wallet.balanceCents");
 
-    if (!buyerBalance || typeof buyerBalance !== "number") {
+    if (buyerBalance === undefined || typeof buyerBalance !== "number") {
       throw new HttpsError("not-found", "Saldo da carteira do comprador não encontrado.");
     }
 
@@ -270,41 +248,50 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       throw new HttpsError("failed-precondition", "Saldo insuficiente para concluir a compra.");
     }
 
+    // 3. Lê o investimento do comprador
+    const buyerInvestedRef = buyerRef.collection("invested").doc(startupId);
+    const buyerInvestedDoc = await transaction.get(buyerInvestedRef);
+
+    // 4. Lê o investimento do vendedor (para limpar se zerou)
+    const sellerRef = db.collection("users").doc(sellerId);
+    const sellerInvestedRef = sellerRef.collection("invested").doc(startupId);
+    const sellerInvestedDoc = await transaction.get(sellerInvestedRef);
+
+
     transaction.update(buyerRef, { "wallet.balanceCents": FieldValue.increment(-totalVolumeCents) });
     transaction.update(sellerRef, { "wallet.balanceCents": FieldValue.increment(totalVolumeCents) });
 
-    // B. Atualizar Tokens do Comprador (Adiciona ao Invested)
+    // B. Transferência de Tokens (Atualiza apenas o Comprador)
     if (buyerInvestedDoc.exists) {
       const currentBuyerHolding = buyerInvestedDoc.data() as TokenHolding;
-      const novaQuantidade = currentBuyerHolding.quantity + exchangeData.quantity;
-
+      const novaQuantidade = currentBuyerHolding.quantity + quantitySold;
       const custoAntigo = currentBuyerHolding.quantity * currentBuyerHolding.averagePurchasePriceCents;
-      const custoNovo = exchangeData.quantity * exchangeData.currentPriceCents;
-      const novoPM = Math.round((custoAntigo + custoNovo) / novaQuantidade);
+      const novoPM = Math.round((custoAntigo + totalVolumeCents) / novaQuantidade);
 
       transaction.update(buyerInvestedRef, {
         quantity: novaQuantidade,
-        averagePurchasePriceCents: novoPM
+        averagePurchasePriceCents: novoPM,
+        totalPriceCents: FieldValue.increment(totalVolumeCents),
+        currentPriceCents: exchangeData.currentPriceCents 
       });
     } else {
       const newHolding: TokenHolding = {
         startupId: startupId,
         startupName: exchangeData.startupName,
-        quantity: exchangeData.quantity,
-        averagePurchasePriceCents: exchangeData.currentPriceCents,
+        quantity: quantitySold,
+        averagePurchasePriceCents: pricePaidPerToken,
         currentPriceCents: exchangeData.currentPriceCents,
+        totalPriceCents: totalVolumeCents, 
       };
       transaction.set(buyerInvestedRef, newHolding);
     }
 
-    const tokensRestantes = sellerInvestedDoc.data()?.quantity;
-    if (tokensRestantes <= 0) {
-      transaction.delete(sellerInvestedRef);
-    } else {
-      transaction.update(sellerInvestedRef, { quantity: tokensRestantes });
+    // C. Limpar a carteira vazia do Vendedor (se aplicável)
+    if (sellerInvestedDoc.exists && sellerInvestedDoc.data()?.quantity === 0) {
+        transaction.delete(sellerInvestedRef);
     }
 
-    // D. Criar Histórico de Transações
+    // D. Criar Histórico de Transações (Recibo)
     const timestamp = FieldValue.serverTimestamp();
 
     const buyerTxRef = buyerRef.collection("transactions").doc();
@@ -312,8 +299,8 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       type: "compra",
       startupId: startupId,
       startupName: exchangeData.startupName,
-      quantity: exchangeData.quantity,
-      priceCents: exchangeData.currentPriceCents,
+      quantity: quantitySold,
+      priceCents: pricePaidPerToken,
       date: timestamp,
     } as WalletTransaction);
 
@@ -322,24 +309,21 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       type: "venda",
       startupId: startupId,
       startupName: exchangeData.startupName,
-      quantity: exchangeData.quantity,
-      priceCents: exchangeData.currentPriceCents,
+      quantity: quantitySold,
+      priceCents: pricePaidPerToken,
       date: timestamp,
     } as WalletTransaction);
 
+    // E. Remover a oferta do balcão
     transaction.delete(exchangeRef);
   });
 
   // ── Pós-transação: atualizar saldos de investidor na startup ────────────
-  // Lembrando que o vendedor já teve sua posição reduzida no recordExchange
-  // (quando criou a oferta). Agora precisamos:
-  // - Adicionar o comprador como investidor (ou somar à posição existente)
-  // O vendedor NÃO é atualizado aqui porque o decremento foi feito no
-  // recordExchange, no momento em que ele colocou a oferta no balcão.
   if (sellerId && quantitySold > 0) {
     await addUserAsInvestor(startupId, buyerId, {
       tokensOwned: quantitySold,
       totalInvestedCents: valueExchangedCents,
+      email: buyerEmail, 
     });
   }
 }

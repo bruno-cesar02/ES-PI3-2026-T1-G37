@@ -8,27 +8,21 @@ import { requireAuthenticatedUser } from "../../users/shared/auth";
 import {
   buyTokens
 } from "../repositories/buySellToken";
-import { TokenTransactionDocument } from "../types";
 
 export const buyStartupToken = onCall(async (req) => {
   const user = requireAuthenticatedUser(req);
 
-  const transactionData: TokenTransactionDocument = {
+  const transactionData = {
     userId: user.uid,
     startupId: req.data.startupId,
-    startupName: req.data.startupName,
-    currentTokenPriceCents: req.data.currentTokenPriceCents,
     tokenAmount: req.data.tokenAmount,
-    totalPriceCents: req.data.totalPriceCents,
   }
 
   try {
     await buyTokens(
       transactionData.userId,
       transactionData.startupId,
-      transactionData.startupName,
       transactionData.tokenAmount,
-      transactionData.currentTokenPriceCents
     );
     return { success: true };
   } catch (error) {
