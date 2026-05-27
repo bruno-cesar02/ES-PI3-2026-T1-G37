@@ -17,7 +17,7 @@ class _TelaLogadaScreenState extends State<TelaLogadaScreen> {
   final List<Widget> _telas = const [
     CatalogoScreen(),                         // Índice 0: Catálogo
     CarteiraScreen(),                         // Índice 1: Carteira
-    BalcaoTokensScreen(),                     // Índice 2: Balcão (A tela nova!)
+    BalcaoScreen(),                     // Índice 2: Balcão
     Center(child: Text('Dashboard - Em breve')), // Índice 3: Dashboard
     Center(child: Text('Perfil - Em breve')),    // Índice 4: Perfil
   ];
