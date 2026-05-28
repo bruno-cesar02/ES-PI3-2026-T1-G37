@@ -8,3 +8,5 @@ export { buyStartupToken } from "./handlers/buyStartupToken";
 export { createExchangeRequest } from "./handlers/createExchangeRequest";
 export {acceptExchangeRequest} from "./handlers/acceptExchangeRequest";
 export {deleteExchangeRequest} from "./handlers/deleteExchangeRequest";
+export {listExchanges} from './handlers/listExchanges';
+export {listMyInvestments} from './handlers/listMyInvestments';
