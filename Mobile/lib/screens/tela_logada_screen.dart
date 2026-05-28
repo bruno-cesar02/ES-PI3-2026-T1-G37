@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'catalogo_screen.dart';
 import 'carteira_screen.dart';
-import 'balcao_screen.dart'; // Import da tela do Balcão
+import 'balcao_screen.dart';// Import da tela do Balcão
+import 'dashboard_screen.dart';
 
 class TelaLogadaScreen extends StatefulWidget {
   const TelaLogadaScreen({super.key});
@@ -18,7 +19,7 @@ class _TelaLogadaScreenState extends State<TelaLogadaScreen> {
     CatalogoScreen(),                         // Índice 0: Catálogo
     CarteiraScreen(),                         // Índice 1: Carteira
     BalcaoScreen(),                     // Índice 2: Balcão
-    Center(child: Text('Dashboard - Em breve')), // Índice 3: Dashboard
+    DashboardScreen(), // Índice 3: Dashboard
     Center(child: Text('Perfil - Em breve')),    // Índice 4: Perfil
   ];
 
