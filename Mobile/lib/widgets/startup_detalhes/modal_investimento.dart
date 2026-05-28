@@ -59,10 +59,7 @@ class _ModalInvestimentoState extends State<ModalInvestimento> {
 
       await StartupService.instance.buyStartupToken(
         startupId: widget.startup.id,
-        startupName: widget.startup.nome,
-        currentTokenPriceCents: currentPriceCents,
         tokenAmount: _tokensToGet,
-        totalPriceCents: totalPriceCents,
       );
 
       if (mounted) {

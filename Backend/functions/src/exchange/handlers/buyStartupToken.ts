@@ -3,13 +3,13 @@ Nome: Otávio Augusto Antunes Marquez
 RA: 24025832
 */ 
 
-import { HttpsError, onCall } from "firebase-functions/https";
+import { HttpsError, onCall, CallableRequest } from "firebase-functions/https";
 import { requireAuthenticatedUser } from "../../users/shared/auth";
 import {
   buyTokens
 } from "../repositories/buySellToken";
 
-export const buyStartupToken = onCall(async (req) => {
+export const buyStartupToken = onCall(async (req: CallableRequest) => {
   const user = requireAuthenticatedUser(req);
 
   const transactionData = {

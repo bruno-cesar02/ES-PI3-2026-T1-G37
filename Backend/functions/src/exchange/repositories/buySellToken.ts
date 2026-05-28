@@ -6,7 +6,6 @@ import { db } from "../shared/firebase";
 import { TokenHolding, WalletTransaction } from "../../wallet/types";
 import { HttpsError } from "firebase-functions/https";
 import { FieldValue } from "firebase-admin/firestore";
-import { updateWalletBalance } from "../../wallet/repositories/walletRepository";
 import {
   addUserAsInvestor,
   removeTokensFromInvestor,
@@ -15,83 +14,117 @@ import { ExchangeDocument } from "../types";
 
 
 export async function buyTokens(userId: string, startupId: string, tokenAmount: number) {
-
-  
-
   if (!userId || !startupId || !tokenAmount || tokenAmount <= 0) {
     throw new HttpsError("invalid-argument", "Parâmetros insuficientes para compra de tokens.");
   }
 
-  const userWalletRef = db.collection("users").doc(userId);
-  const tokensRef = await userWalletRef.collection("invested").doc(startupId).get();
-  const walletRef = await userWalletRef.get();
+  const userRef = db.collection("users").doc(userId);
   const startupRef = db.collection("startups").doc(startupId);
-  const startupDoc = await startupRef.get();
+  const investedRef = userRef.collection("invested").doc(startupId);
+  const investorRef = startupRef.collection("investors").doc(userId);
+  const txRef = userRef.collection("transactions").doc();
 
+  await db.runTransaction(async (transaction) => {
+    const [startupDoc, userDoc, investedDoc, investorDoc] = await Promise.all([
+      transaction.get(startupRef),
+      transaction.get(userRef),
+      transaction.get(investedRef),
+      transaction.get(investorRef),
+    ]);
 
-  const totalPriceCents = tokenAmount * startupDoc.data()?.currentTokenPriceCents;
+    if (!startupDoc.exists) throw new HttpsError("not-found", "Startup não encontrada.");
+    if (!userDoc.exists) throw new HttpsError("not-found", "Carteira do usuário não encontrada.");
 
+    // Fallbacks para garantir que NENHUM dado venha undefined e quebre o Firestore
+    const startupData = startupDoc.data() || {};
+    const userData = userDoc.data() || {};
 
-  if (!startupDoc.exists) {
-    throw new HttpsError("not-found", "Startup não encontrada para compra de tokens.");
-  }
+    const currentPriceCents = Math.round(startupData.currentTokenPriceCents || 0);
+    const totalPriceCents = tokenAmount * currentPriceCents;
+    const newPriceCents = Math.round(currentPriceCents * Math.pow(1.01, tokenAmount));
+    
+    // PROTEÇÃO 1: Evita que undefined no nome quebre a criação do registro
+    const startupName = startupData.name || "Startup Desconhecida"; 
 
-   if (!walletRef.exists) {
-    throw new HttpsError("not-found", "Carteira do usuário não encontrada.");
-  }
+    // PROTEÇÃO 2: Lê o saldo de forma segura, independente de como o usuário foi criado
+    const walletData = userData.wallet || {};
+    const currentBalance = walletData.balanceCents ?? userData.balanceCents ?? 0;
 
-  if (walletRef.data()?.wallet.balanceCents < totalPriceCents) {
-    throw new HttpsError("failed-precondition", "Saldo insuficiente para compra de tokens.");
-  }
+    if (currentBalance < totalPriceCents) {
+      throw new HttpsError("failed-precondition", "Saldo insuficiente para compra de tokens.");
+    }
 
-  updateTokenIssued(startupId, tokenAmount);
+    // 1. Atualiza os dados da Startup
+    transaction.update(startupRef, {
+      totalTokensIssued: FieldValue.increment(tokenAmount),
+      currentTokenPriceCents: newPriceCents
+    });
 
+    // 2. Atualiza a Carteira do Usuário de forma 100% segura (sem usar notação de ponto)
+    transaction.update(userRef, {
+      wallet: {
+        ...walletData, // Mantém outros dados da carteira intactos
+        balanceCents: currentBalance - totalPriceCents
+      }
+    });
 
-  //const lucroPorToken = precoAtualDaStartup - averagePurchasePriceCents; 
-  // 1500 - 1300 = +200 centavos de lucro por token
+    // 3. Atualiza a subcoleção 'invested'
+    if (investedDoc.exists) {
+      const existing = investedDoc.data() || {};
+      const currentQty = existing.quantity || 0;
+      const currentTotal = existing.totalPriceCents || 0;
+      const newQty = currentQty + tokenAmount;
+      const newAvg = Math.round((currentTotal + totalPriceCents) / newQty);
 
-  //const lucroTotal = lucroPorToken * quantidadeDeTokensQueEleTem;
-  // 200 * 15 = +3000 centavos ($30.00 de lucro total)
+      transaction.update(investedRef, {
+        quantity: newQty,
+        averagePurchasePriceCents: newAvg,
+        currentPriceCents: currentPriceCents,
+        totalPriceCents: FieldValue.increment(totalPriceCents),
+      });
+    } else {
+      transaction.set(investedRef, {
+        startupId: startupId,
+        startupName: startupName,
+        quantity: tokenAmount,
+        averagePurchasePriceCents: currentPriceCents,
+        currentPriceCents: currentPriceCents,
+        totalPriceCents: totalPriceCents,
+      });
+    }
 
-  if(tokensRef.exists) {
-    await tokensRef.ref.update({
-      quantity: (tokensRef.data()?.quantity || 0) + tokenAmount,
-      averagePurchasePriceCents: ((tokensRef.data()?.averagePurchasePriceCents || 0) * (tokensRef.data()?.quantity || 0) + totalPriceCents) / ((tokensRef.data()?.quantity || 0) + tokenAmount),
-      currentPriceCents: startupDoc.data()?.currentTokenPriceCents,
-      totalPriceCents: totalPriceCents + (tokensRef.data()?.totalPriceCents || 0),
-    } as TokenHolding);
-  } else {
-    await userWalletRef.collection("invested").doc(startupId).set({
-      startupId,
-      startupName: startupDoc.data()?.name,
+    // 4. Registra a Transação
+    transaction.set(txRef, {
+      type: "compra",
+      startupId: startupId,
+      startupName: startupName,
       quantity: tokenAmount,
-      averagePurchasePriceCents: totalPriceCents / tokenAmount,
-      currentPriceCents: startupDoc.data()?.currentTokenPriceCents,
-      totalPriceCents: totalPriceCents,
-    } as TokenHolding);
-  }
+      priceCents: currentPriceCents,
+      date: FieldValue.serverTimestamp(),
+    } as WalletTransaction);
 
-  await userWalletRef.collection("transactions").doc().set({
-    type: "compra",
-    startupId,
-    startupName: startupDoc.data()?.name,
-    quantity: tokenAmount,
-    priceCents: startupDoc.data()?.currentTokenPriceCents,
-    date: FieldValue.serverTimestamp(),
-  } as WalletTransaction);
-  
-  await updateWalletBalance(userId, -totalPriceCents, true);
-
-  const userEmail = walletRef.data()?.email as string | undefined;
-
-  await addUserAsInvestor(startupId, userId, {
-    tokensOwned: tokenAmount,
-    totalInvestedCents: totalPriceCents,
-    email: userEmail,
+    // 5. Atualiza/Cria subcoleção 'investors'
+    const userEmail = userData.email ?? null; // Null é aceito pelo Firebase, undefined não
+    if (investorDoc.exists) {
+      transaction.update(investorRef, {
+        tokensOwned: FieldValue.increment(tokenAmount),
+        totalInvestedCents: FieldValue.increment(totalPriceCents),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    } else {
+      transaction.set(investorRef, {
+        uid: userId,
+        email: userEmail,
+        tokensOwned: tokenAmount,
+        totalInvestedCents: totalPriceCents,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
   });
 }
 
-
+// Mantemos a função original corrigida com Math.round para não quebrar outros arquivos que a importem
 export async function updateTokenIssued(startupId: string, tokensDiff: number) {
   const startupRef = db.collection("startups").doc(startupId);
   const startupDoc = await startupRef.get();
@@ -100,12 +133,13 @@ export async function updateTokenIssued(startupId: string, tokensDiff: number) {
     throw new HttpsError("not-found", "Startup não encontrada para atualização de tokens.");
   }
 
+  const currentPriceCents = Math.round(startupDoc.data()?.currentTokenPriceCents || 0);
+  const newPriceCents = Math.round(currentPriceCents * Math.pow(1.01, tokensDiff));
+
   await startupDoc.ref.update({
     totalTokensIssued: FieldValue.increment(tokensDiff),
-    currentTokenPriceCents: (startupDoc.data()?.currentTokenPriceCents || 0) * Math.pow(1.01, tokensDiff)
+    currentTokenPriceCents: newPriceCents
   });
-
-  
 }
 
 export async function recordExchange(startupId: string, tokenOwnerId: string, quantity: number, purchasePriceCents?: number) {

@@ -65,18 +65,12 @@ class StartupService {
 
   Future<void> buyStartupToken({
     required String startupId,
-    required String startupName,
-    required int currentTokenPriceCents,
     required int tokenAmount,
-    required int totalPriceCents,
   }) async {
     final callable = _functions.httpsCallable('buyStartupToken');
     await callable.call({
       'startupId': startupId,
-      'startupName': startupName,
-      'currentTokenPriceCents': currentTokenPriceCents,
       'tokenAmount': tokenAmount,
-      'totalPriceCents': totalPriceCents,
     });
   }
 

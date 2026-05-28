@@ -42,6 +42,11 @@ export const createUser = onCall(async (request) => {
       cpf: data.cpf.trim(),
       celular: data.celular.trim(),
       mfaEnabled: false,
+      wallet: {
+        balanceCents: 0,
+        totalProfitLoss: 0,
+        totalequity: 0, // Inicializa a carteira do usuário com saldo zero
+      }
     });
 
     logger.info(`Perfil salvo no Firestore para o usuário: ${userRecord.uid}`);
