@@ -10,3 +10,4 @@ export {acceptExchangeRequest} from "./handlers/acceptExchangeRequest";
 export {deleteExchangeRequest} from "./handlers/deleteExchangeRequest";
 export {listExchanges} from './handlers/listExchanges';
 export {listMyInvestments} from './handlers/listMyInvestments';
+export {getUserDashboardData} from './handlers/getUserDashboardData'
