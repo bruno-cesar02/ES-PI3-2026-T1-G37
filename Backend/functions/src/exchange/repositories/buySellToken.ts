@@ -270,14 +270,14 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
   let buyerEmail: string | undefined = undefined;
 
   await db.runTransaction(async (transaction) => {
-    // 1. Leituras essenciais
+    // ==========================================
+    // 1. BLOCO DE LEITURAS (READS)
+    // ==========================================
+    
+    // Lemos a oferta primeiro porque precisamos descobrir quem é o sellerId
     const exchangeDoc = await transaction.get(exchangeRef);
-    const startupDoc = await transaction.get(startupRef);
-    const buyerDoc = await transaction.get(buyerRef);
-
     if (!exchangeDoc.exists) throw new HttpsError("not-found", "A oferta já foi concluída ou cancelada.");
-    if (!startupDoc.exists) throw new HttpsError("not-found", "Startup não encontrada.");
-
+    
     const exchangeData = exchangeDoc.data() as ExchangeDocument;
     sellerId = exchangeData.tokenOwnerId;
     quantitySold = exchangeData.quantity;
@@ -286,20 +286,57 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       throw new HttpsError("invalid-argument", "Você não pode aceitar sua própria oferta.");
     }
 
+    // Agora que temos o sellerId, montamos as referências dos investimentos
+    const sellerRef = db.collection("users").doc(sellerId);
+    const buyerInvestedRef = buyerRef.collection("invested").doc(startupId);
+    const sellerInvestedRef = sellerRef.collection("invested").doc(startupId);
+
+    // Fazemos todas as outras leituras juntas para ganhar velocidade
+    const [startupDoc, buyerDoc, buyerInvestedDoc, sellerInvestedDoc] = await Promise.all([
+      transaction.get(startupRef),
+      transaction.get(buyerRef),
+      transaction.get(buyerInvestedRef),
+      transaction.get(sellerInvestedRef)
+    ]);
+
+    if (!startupDoc.exists) throw new HttpsError("not-found", "Startup não encontrada.");
+
+    // ==========================================
+    // 2. BLOCO DE LÓGICA E VALIDAÇÃO (Sem escritas)
+    // ==========================================
+    
     const pricePaidPerToken = exchangeData.purchasePriceCents || exchangeData.currentPriceCents;
     const totalVolumeCents = quantitySold * pricePaidPerToken;
     valueExchangedCents = totalVolumeCents; 
 
-    // 2. Lógica de Desvalorização (Média Ponderada)
+    // Validação de Saldo
+    const buyerData = buyerDoc.data() || {};
+    buyerEmail = buyerData.email;
+    const buyerWalletData = buyerData.wallet || {};
+    const buyerBalance = buyerWalletData.balanceCents ?? buyerData.balanceCents ?? 0;
+
+    if (buyerBalance < totalVolumeCents) {
+      throw new HttpsError("failed-precondition", "Saldo insuficiente para concluir a compra.");
+    }
+
     const currentStartupPrice = startupDoc.data()?.currentTokenPriceCents || 0;
     const totalTokensIssued = startupDoc.data()?.totalTokensIssued || 1; 
 
+    // ==========================================
+    // 3. BLOCO DE ESCRITAS (WRITES)
+    // ==========================================
+    
+    // A. Desvalorização da Startup
     if (pricePaidPerToken < currentStartupPrice) {
       const safeQuantitySold = Math.min(quantitySold, totalTokensIssued);
       const totalValuePreserved = (totalTokensIssued - safeQuantitySold) * currentStartupPrice;
       const totalValueSold = safeQuantitySold * pricePaidPerToken;
       
-      const newPriceCents = Math.round((totalValuePreserved + totalValueSold) / totalTokensIssued);
+      let newPriceCents = Math.round((totalValuePreserved + totalValueSold) / totalTokensIssued);
+
+      if (newPriceCents >= currentStartupPrice && pricePaidPerToken < currentStartupPrice) {
+        newPriceCents = currentStartupPrice - 1; // Trava de sensibilidade
+      }
 
       if (newPriceCents < currentStartupPrice) {
         transaction.update(startupRef, {
@@ -320,35 +357,13 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       }
     }
 
-    // 3. Validação de Saldo do Comprador de forma segura
-    const buyerData = buyerDoc.data() || {};
-    buyerEmail = buyerData.email;
-    const buyerWalletData = buyerData.wallet || {};
-    const buyerBalance = buyerWalletData.balanceCents ?? buyerData.balanceCents ?? 0;
-
-    if (buyerBalance < totalVolumeCents) {
-      throw new HttpsError("failed-precondition", "Saldo insuficiente para concluir a compra.");
-    }
-
-    // 4. Leituras dos investimentos
-    const buyerInvestedRef = buyerRef.collection("invested").doc(startupId);
-    const sellerRef = db.collection("users").doc(sellerId);
-    const sellerInvestedRef = sellerRef.collection("invested").doc(startupId);
-
-    const buyerInvestedDoc = await transaction.get(buyerInvestedRef);
-    const sellerInvestedDoc = await transaction.get(sellerInvestedRef);
-
-    // 5. Transferência Financeira
+    // B. Transferência Financeira
     transaction.update(buyerRef, { 
-      wallet: {
-        ...buyerWalletData,
-        balanceCents: buyerBalance - totalVolumeCents
-      }
+      wallet: { ...buyerWalletData, balanceCents: buyerBalance - totalVolumeCents }
     });
-    // O seller recebe o dinheiro (usando increment para simplificar, mas certifique-se que o schema suporta)
     transaction.update(sellerRef, { "wallet.balanceCents": FieldValue.increment(totalVolumeCents) });
 
-    // 6. Transferência de Tokens
+    // C. Transferência de Tokens
     if (buyerInvestedDoc.exists) {
       const currentBuyerHolding = buyerInvestedDoc.data() as TokenHolding;
       const novaQuantidade = currentBuyerHolding.quantity + quantitySold;
@@ -373,11 +388,12 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       transaction.set(buyerInvestedRef, newHolding);
     }
 
-    // 7. Limpeza e Recibos
+    // D. Limpeza de Posição Zerada
     if (sellerInvestedDoc.exists && sellerInvestedDoc.data()?.quantity === 0) {
         transaction.delete(sellerInvestedRef);
     }
 
+    // E. Recibos e Histórico
     const timestamp = FieldValue.serverTimestamp();
 
     const buyerTxRef = buyerRef.collection("transactions").doc();
@@ -400,10 +416,11 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       date: timestamp,
     } as WalletTransaction);
 
+    // F. Remove a oferta do balcão
     transaction.delete(exchangeRef);
   });
 
-  // 8. Pós-transação: atualizar investidores
+  // 4. Pós-transação (Fora do bloco atômico)
   if (sellerId && quantitySold > 0) {
     await addUserAsInvestor(startupId, buyerId, {
       tokensOwned: quantitySold,
