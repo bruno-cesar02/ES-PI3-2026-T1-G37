@@ -35,18 +35,27 @@ export async function buyTokens(userId: string, startupId: string, tokenAmount: 
     if (!startupDoc.exists) throw new HttpsError("not-found", "Startup não encontrada.");
     if (!userDoc.exists) throw new HttpsError("not-found", "Carteira do usuário não encontrada.");
 
-    // Fallbacks para garantir que NENHUM dado venha undefined e quebre o Firestore
+
     const startupData = startupDoc.data() || {};
     const userData = userDoc.data() || {};
 
     const currentPriceCents = Math.round(startupData.currentTokenPriceCents || 0);
+    const totalTokensIssued = startupData.totalTokensIssued || 0;
+    const currentStartupAvgCents = startupData.averageTokenPriceCents || currentPriceCents;
+    
+    
     const totalPriceCents = tokenAmount * currentPriceCents;
+    
+    
     const newPriceCents = Math.round(currentPriceCents * Math.pow(1.01, tokenAmount));
     
-    // PROTEÇÃO 1: Evita que undefined no nome quebre a criação do registro
-    const startupName = startupData.name || "Startup Desconhecida"; 
+    
+    const oldTotalPatrimony = totalTokensIssued * currentStartupAvgCents;
+    const newStartupAvgCents = totalTokensIssued === 0 
+      ? currentPriceCents 
+      : Math.round((oldTotalPatrimony + totalPriceCents) / (totalTokensIssued + tokenAmount));
 
-    // PROTEÇÃO 2: Lê o saldo de forma segura, independente de como o usuário foi criado
+    const startupName = startupData.name || "Startup Desconhecida"; 
     const walletData = userData.wallet || {};
     const currentBalance = walletData.balanceCents ?? userData.balanceCents ?? 0;
 
@@ -54,14 +63,15 @@ export async function buyTokens(userId: string, startupId: string, tokenAmount: 
       throw new HttpsError("failed-precondition", "Saldo insuficiente para compra de tokens.");
     }
 
-    // 1. Atualiza os dados da Startup
+    
     transaction.update(startupRef, {
       totalTokensIssued: FieldValue.increment(tokenAmount),
       currentTokenPriceCents: newPriceCents,
-      averageTokenPriceCents: newPriceCents 
+      previousTokenPriceCents: currentPriceCents, // Salva o preço antes de subir!
+      averageTokenPriceCents: newStartupAvgCents  // Salva a média correta
     });
 
-    // 1.5 Registra a valorização no histórico de preços (Faltava isso!)
+    
     const priceHistoryRef = startupRef.collection("priceHistory").doc();
     transaction.set(priceHistoryRef, {
       priceCents: newPriceCents,
@@ -70,15 +80,15 @@ export async function buyTokens(userId: string, startupId: string, tokenAmount: 
       createdAt: FieldValue.serverTimestamp()
     });
 
-    // 2. Atualiza a Carteira do Usuário de forma 100% segura (sem usar notação de ponto)
+    
     transaction.update(userRef, {
       wallet: {
-        ...walletData, // Mantém outros dados da carteira intactos
+        ...walletData, 
         balanceCents: currentBalance - totalPriceCents
       }
     });
 
-    // 3. Atualiza a subcoleção 'invested'
+    
     if (investedDoc.exists) {
       const existing = investedDoc.data() || {};
       const currentQty = existing.quantity || 0;
@@ -294,7 +304,8 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
       if (newPriceCents < currentStartupPrice) {
         transaction.update(startupRef, {
           currentTokenPriceCents: newPriceCents,
-          averageTokenPriceCents: newPriceCents 
+          previousTokenPriceCents: currentStartupPrice,
+          averageTokenPriceCents: newPriceCents
         });
 
         const priceHistoryRef = startupRef.collection("priceHistory").doc();
