@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';
 import '../../theme/app_colors.dart';
+import '../../services/balcao_service.dart'; // Import adicionado!
 
 class ModalVenda extends StatefulWidget {
   final Startup startup;
@@ -72,26 +73,32 @@ class _ModalVendaState extends State<ModalVenda> {
     if (!_canConfirm) return;
     setState(() => _isLoading = true);
 
-    // TODO: Quando o BalcaoService.criarOferta() existir, a chamada real entra aqui.
-    // Por enquanto só logamos pra confirmar que os valores estão certos.
-    debugPrint('━━━━━━ Criando Oferta no Balcão ━━━━━━');
-    debugPrint('Startup: ${widget.startup.nome} (id: ${widget.startup.id})');
-    debugPrint('Quantidade: $_tokensToSell tokens');
-    debugPrint('Preço unitário: R\$ ${_precoUnitario.toStringAsFixed(2)}');
-    debugPrint('Preço base: R\$ ${_precoBase.toStringAsFixed(2)}');
-    debugPrint('Variação vs base: ${_variacao.toStringAsFixed(2)}%');
-    debugPrint('Valor total: R\$ ${_valorTotal.toStringAsFixed(2)}');
+    try {
+      // 1. Chama o Firebase para criar a oferta
+      await BalcaoService().criarOferta(
+        startupId: widget.startup.id,
+        quantity: _tokensToSell,
+        purchasePriceCents: (_precoUnitario * 100).round(),
+      );
 
-    await Future.delayed(const Duration(milliseconds: 600));
+      // 2. Se deu tudo certo, mostra a tela de sucesso
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _success = true;
+        });
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _success = true;
-      });
-      Future.delayed(const Duration(milliseconds: 1800), () {
-        if (mounted) Navigator.pop(context, true);
-      });
+        // 3. Espera 1.8 segundos para o usuário ler a mensagem e fecha o modal
+        Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) Navigator.pop(context, true);
+        });
+      }
+    } catch (e) {
+      // 4. Se deu erro, para o loading
+      if (mounted) {
+        setState(() => _isLoading = false);
+        debugPrint('Erro ao criar oferta: $e');
+      }
     }
   }
 

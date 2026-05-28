@@ -53,7 +53,7 @@ class OfertaCard extends StatelessWidget {
                   Text('R\$ ${oferta.precoUnitario.toStringAsFixed(2).replaceAll('.', ',')}', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
-                      '${oferta.variacaoPercent >= 0 ? '+' : ''}${oferta.variacaoPercent}%',
+                      '${oferta.variacaoPercent >= 0 ? '+' : ''}${oferta.variacaoPercent.toStringAsFixed(2)}%',
                       style: TextStyle(
                           color: oferta.variacaoPercent >= 0 ? const Color(0xFF00AE51) : Colors.red,
                           fontSize: 12,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/oferta_model.dart';
+import '../../services/balcao_service.dart';
 
 class ModalCompraOferta extends StatefulWidget {
   final OfertaModel oferta;
@@ -12,9 +13,17 @@ class ModalCompraOferta extends StatefulWidget {
 class _ModalCompraOfertaState extends State<ModalCompraOferta> {
   bool confirmado = false;
 
-  void _confirmarCompra() {
-    setState(() => confirmado = true);
-    Future.delayed(const Duration(seconds: 2), () => Navigator.pop(context));
+  void _confirmarCompra() async {
+    try {
+      await BalcaoService().aceitarOferta(
+        exchangeId: widget.oferta.id,
+        startupId: widget.oferta.startupId,
+      );
+      setState(() => confirmado = true);
+      Future.delayed(const Duration(seconds: 2), () => Navigator.pop(context, true));
+    } catch (e) {
+      // Aqui você pode colocar uma notificação de erro, ex: "Saldo insuficiente"
+    }
   }
 
   @override

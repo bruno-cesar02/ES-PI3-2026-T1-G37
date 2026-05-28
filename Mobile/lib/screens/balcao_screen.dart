@@ -31,29 +31,39 @@ class _BalcaoScreenState extends State<BalcaoScreen> {
     setState(() => isLoading = true);
     final disponiveis = await _balcaoService.fetchOfertasDisponiveis();
     final minhas = await _balcaoService.fetchMinhasOfertas();
-    setState(() {
-      ofertasDeVenda = disponiveis;
-      minhasOfertas = minhas;
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        ofertasDeVenda = disponiveis;
+        minhasOfertas = minhas;
+        isLoading = false;
+      });
+    }
   }
 
-  void _abrirCompraSheet(OfertaModel oferta) {
-    showModalBottomSheet(
+  void _abrirCompraSheet(OfertaModel oferta) async {
+    final comprou = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ModalCompraOferta(oferta: oferta),
     );
+    // Se a compra foi concluída com sucesso, recarrega o balcão
+    if (comprou == true) {
+      _carregarDados();
+    }
   }
 
-  void _abrirNovaOfertaSheet() {
-    showModalBottomSheet(
+  void _abrirNovaOfertaSheet() async {
+    final criou = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const ModalNovaOferta(),
     );
+    // Se a oferta foi criada com sucesso, recarrega o balcão
+    if (criou == true) {
+      _carregarDados();
+    }
   }
 
   @override
@@ -64,7 +74,6 @@ class _BalcaoScreenState extends State<BalcaoScreen> {
         : listaBase.where((o) =>
         o.startupNome.toLowerCase().contains(searchQuery.toLowerCase())
     ).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFF020C14),
       appBar: AppBar(
@@ -123,32 +132,49 @@ class _BalcaoScreenState extends State<BalcaoScreen> {
 
           const SizedBox(height: 20),
 
-          // Lista de Ofertas
+          // Lista de Ofertas com Pull-to-Refresh
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF386BF6)))
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              itemCount: listaExibida.length,
-              itemBuilder: (context, index) {
-                final oferta = listaExibida[index];
-                return OfertaCard(
-                  oferta: oferta,
-                  isMinha: tab == 'minhas',
-                  onAction: () {
-                    if (tab == 'minhas') {
-                      // Lógica de cancelar no futuro
-                      print('Cancelar oferta ${oferta.id}');
-                    } else {
-                      _abrirCompraSheet(oferta);
-                    }
-                  },
-                );
-              },
+                : RefreshIndicator(
+              color: const Color(0xFF386BF6),
+              backgroundColor: const Color(0xFF020C14),
+              onRefresh: _carregarDados, // Ao puxar para baixo, atualiza!
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                itemCount: listaExibida.length,
+                itemBuilder: (context, index) {
+                  final oferta = listaExibida[index];
+                  return OfertaCard(
+                    oferta: oferta,
+                    isMinha: tab == 'minhas',
+                    onAction: () async {
+                      if (tab == 'minhas') {
+                        setState(() => isLoading = true);
+                        try {
+                          await _balcaoService.cancelarOferta(
+                            exchangeId: oferta.id,
+                            startupId: oferta.startupId,
+                          );
+                          await _carregarDados();
+                        } catch (e) {
+                          setState(() => isLoading = false);
+                          debugPrint("Erro ao cancelar: $e");
+                        }
+                      } else {
+                        _abrirCompraSheet(oferta);
+                      }
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],
       ),
+
+      // BOTÃO DE VOLTA NA TELA!
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF386BF6),
         onPressed: _abrirNovaOfertaSheet,
