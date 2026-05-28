@@ -8,3 +8,4 @@ export {createStartupQuestion} from "./handlers/createStartupQuestion";
 export {getStartupDetails} from "./handlers/getStartupDetails";
 export {seedTestInvestor} from "./handlers/seedTestInvestor";
 export { listStartupExchangesHandler } from "./handlers/listStartupExchange";
+export { getStartupPriceHistory } from "./handlers/showStartupPriceHistory";
