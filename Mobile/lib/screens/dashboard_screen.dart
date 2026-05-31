@@ -43,11 +43,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
 
-    // Busca o nome do usuário primeiro
     final nome = await _dashboardService.fetchUserName();
     if (mounted) setState(() => _nomeUsuario = nome);
 
-    // Depois busca os dados gerais
     await _fetchGeneralDashboard();
   }
 
@@ -97,6 +95,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // ─── FUNÇÃO DO PULL-TO-REFRESH ───
+  Future<void> _handleRefresh() async {
+    if (selectedStartupId == null) {
+      await _fetchGeneralDashboard();
+    } else {
+      // Se houver uma startup selecionada, atualiza ambos para manter os dados frescos
+      await Future.wait([
+        _fetchGeneralDashboard(),
+        _fetchStartupHistory(selectedStartupId!)
+      ]);
+    }
+  }
+
   // ─── GETTERS DINÂMICOS ───
 
   List<FlSpot> get currentChartData => selectedStartupId == null ? _generalSpots : _startupSpots;
@@ -138,255 +149,270 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: bgColor,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cabeçalho
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Bem-vindo de volta,', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                  Text(_nomeUsuario, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
+        // ── PULL-TO-REFRESH ADICIONADO AQUI ──
+        child: RefreshIndicator(
+          color: primaryColor,
+          backgroundColor: bgColor,
+          onRefresh: _handleRefresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(), // Garante que consegue puxar pra baixo
+            slivers: [
 
-            // Visão Dinâmica (Patrimônio)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(topTitle, style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(_formatBRL(topValue), style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -1)),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                            color: topVariation >= 0 ? positiveColor.withOpacity(0.15) : negativeColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(100)
-                        ),
-                        child: Text(
-                            '${topVariation >= 0 ? '+' : ''}${topVariation.toStringAsFixed(2)}%',
-                            style: TextStyle(color: topVariation >= 0 ? positiveColor : negativeColor, fontSize: 13, fontWeight: FontWeight.bold)
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Filtros de Período
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: ['1D', '1S', '1M', '6M', 'YTD'].map((period) {
-                  final isSelected = selectedPeriod == period;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => selectedPeriod = period);
-                      if (selectedStartupId == null) {
-                        setState(() => _isChartLoading = true);
-                        _fetchGeneralDashboard().then((_) {
-                          if (mounted) setState(() => _isChartLoading = false);
-                        });
-                      } else {
-                        _fetchStartupHistory(selectedStartupId!);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: isSelected ? primaryColor : Colors.transparent, width: 2))),
-                      child: Text(period, style: TextStyle(color: isSelected ? primaryColor : const Color(0xFF718096), fontWeight: FontWeight.bold, fontSize: 13)),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Gráfico fl_chart
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                height: 180,
-                padding: const EdgeInsets.only(top: 24, right: 16, left: 4, bottom: 12),
-                decoration: const BoxDecoration(color: Color(0xFFF8FAFC), borderRadius: BorderRadius.vertical(bottom: Radius.circular(16))),
-                child: _isChartLoading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF386BF6)))
-                    : Column(
-                  children: [
-                    Expanded(
-                      child: LineChart(
-                        LineChartData(
-                          gridData: const FlGridData(show: false),
-                          titlesData: FlTitlesData(
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true, reservedSize: 22, interval: 1,
-                                getTitlesWidget: (value, meta) {
-                                  const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'];
-                                  if (value.toInt() >= 0 && value.toInt() < labels.length) {
-                                    return Text(labels[value.toInt()], style: const TextStyle(color: Color(0xFF555555), fontSize: 11));
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true, reservedSize: 32,
-                                getTitlesWidget: (value, meta) {
-                                  if (value == meta.min || value == meta.max) return const SizedBox.shrink();
-                                  return Text('R\$${value.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF555555), fontSize: 10));
-                                },
-                              ),
-                            ),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          minX: 0, maxX: 6,
-                          minY: chartMinY, maxY: chartMaxY,
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: currentChartData,
-                              isCurved: true, color: primaryColor, barWidth: 2, isStrokeCapRound: true,
-                              dotData: FlDotData(
-                                show: true,
-                                getDotPainter: (spot, percent, barData, index) => CircleButtPainter(
-                                  color: const Color(0xFF1A1F26), strokeWidth: 1.5, strokeColor: primaryColor, radius: 3.5,
-                                ),
-                              ),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                gradient: LinearGradient(
-                                  colors: [primaryColor.withOpacity(0.3), primaryColor.withOpacity(0.02)],
-                                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        duration: const Duration(milliseconds: 400),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Lista Inferior "Seus Tokens"
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(top: 16),
-                decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+              // ── PARTE SUPERIOR (Header, Valores e Gráfico) ──
+              SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
-                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFD9D9D9), borderRadius: BorderRadius.circular(2)))),
-
+                    // Cabeçalho
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Seus Tokens', style: TextStyle(color: Color(0xFF020C14), fontSize: 18, fontWeight: FontWeight.bold)),
-                          if (selectedStartupId != null)
-                            GestureDetector(
-                              onTap: () => setState(() {
-                                selectedStartupId = null;
-                                _fetchGeneralDashboard();
-                              }),
-                              child: const Text('Limpar seleção', style: TextStyle(color: Color(0xFF386BF6), fontSize: 13, fontWeight: FontWeight.w600)),
-                            ),
+                          const Text('Bem-vindo de volta,', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                          Text(_nomeUsuario, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
 
-                    Expanded(
-                      child: _portfolio.isEmpty
-                          ? const Center(child: Text('Você não possui tokens.', style: TextStyle(color: Colors.grey)))
-                          : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: _portfolio.length,
-                        separatorBuilder: (context, index) => const Divider(color: Color(0xFFF0F0F0), height: 1),
-                        itemBuilder: (context, index) {
-                          final item = _portfolio[index];
-                          final isSelected = selectedStartupId == item['id'];
-                          final valCents = item['valorTotalCents'] as num;
-                          final variacao = (item['variacaoPercent'] as num).toDouble();
-                          final bool isPositive = variacao >= 0;
+                    // Visão Dinâmica (Patrimônio)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(topTitle, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(_formatBRL(topValue), style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -1)),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: topVariation >= 0 ? positiveColor.withOpacity(0.15) : negativeColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(100)
+                                ),
+                                child: Text(
+                                    '${topVariation >= 0 ? '+' : ''}${topVariation.toStringAsFixed(2)}%',
+                                    style: TextStyle(color: topVariation >= 0 ? positiveColor : negativeColor, fontSize: 13, fontWeight: FontWeight.bold)
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
 
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                    // Filtros de Período
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: ['1D', '1S', '1M', '6M', 'YTD'].map((period) {
+                          final isSelected = selectedPeriod == period;
+                          return GestureDetector(
                             onTap: () {
-                              setState(() {
-                                if (isSelected) {
-                                  selectedStartupId = null;
-                                } else {
-                                  selectedStartupId = item['id'];
-                                  _fetchStartupHistory(selectedStartupId!);
-                                }
-                              });
+                              setState(() => selectedPeriod = period);
+                              if (selectedStartupId == null) {
+                                setState(() => _isChartLoading = true);
+                                _fetchGeneralDashboard().then((_) {
+                                  if (mounted) setState(() => _isChartLoading = false);
+                                });
+                              } else {
+                                _fetchStartupHistory(selectedStartupId!);
+                              }
                             },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isSelected ? primaryColor.withOpacity(0.08) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: isSelected ? primaryColor.withOpacity(0.3) : Colors.transparent),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 56, height: 56,
-                                    decoration: BoxDecoration(color: const Color(0xFF020C14), borderRadius: BorderRadius.circular(14)),
-                                    child: Center(child: Text(item['logoTexto'], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(item['nome'], style: const TextStyle(color: Color(0xFF020C14), fontSize: 16, fontWeight: FontWeight.bold)),
-                                        const SizedBox(height: 2),
-                                        Text('${item['tokens']} tokens', style: const TextStyle(color: Color(0xFF505050), fontSize: 12)),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(_formatBRL(valCents / 100.0), style: const TextStyle(color: Color(0xFF020C14), fontSize: 16, fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                          '${isPositive ? '+' : ''}${variacao.toStringAsFixed(1)}%',
-                                          style: TextStyle(color: isPositive ? positiveColor : negativeColor, fontSize: 13, fontWeight: FontWeight.w600)
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                            child: Container(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: isSelected ? primaryColor : Colors.transparent, width: 2))),
+                              child: Text(period, style: TextStyle(color: isSelected ? primaryColor : const Color(0xFF718096), fontWeight: FontWeight.bold, fontSize: 13)),
                             ),
                           );
-                        },
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Gráfico fl_chart
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        height: 180,
+                        padding: const EdgeInsets.only(top: 24, right: 16, left: 4, bottom: 12),
+                        decoration: const BoxDecoration(color: Color(0xFFF8FAFC), borderRadius: BorderRadius.vertical(bottom: Radius.circular(16))),
+                        child: _isChartLoading
+                            ? const Center(child: CircularProgressIndicator(color: Color(0xFF386BF6)))
+                            : Column(
+                          children: [
+                            Expanded(
+                              child: LineChart(
+                                LineChartData(
+                                  gridData: const FlGridData(show: false),
+                                  titlesData: FlTitlesData(
+                                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true, reservedSize: 22, interval: 1,
+                                        getTitlesWidget: (value, meta) {
+                                          const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'];
+                                          if (value.toInt() >= 0 && value.toInt() < labels.length) {
+                                            return Text(labels[value.toInt()], style: const TextStyle(color: Color(0xFF555555), fontSize: 11));
+                                          }
+                                          return const SizedBox.shrink();
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true, reservedSize: 32,
+                                        getTitlesWidget: (value, meta) {
+                                          if (value == meta.min || value == meta.max) return const SizedBox.shrink();
+                                          return Text('R\$${value.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF555555), fontSize: 10));
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  minX: 0, maxX: 6,
+                                  minY: chartMinY, maxY: chartMaxY,
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: currentChartData,
+                                      isCurved: true, color: primaryColor, barWidth: 2, isStrokeCapRound: true,
+                                      dotData: FlDotData(
+                                        show: true,
+                                        getDotPainter: (spot, percent, barData, index) => CircleButtPainter(
+                                          color: const Color(0xFF1A1F26), strokeWidth: 1.5, strokeColor: primaryColor, radius: 3.5,
+                                        ),
+                                      ),
+                                      belowBarData: BarAreaData(
+                                        show: true,
+                                        gradient: LinearGradient(
+                                          colors: [primaryColor.withOpacity(0.3), primaryColor.withOpacity(0.02)],
+                                          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                duration: const Duration(milliseconds: 400),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // ── PARTE INFERIOR (Lista de Tokens) ──
+              SliverFillRemaining(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFD9D9D9), borderRadius: BorderRadius.circular(2)))),
+
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Seus Tokens', style: TextStyle(color: Color(0xFF020C14), fontSize: 18, fontWeight: FontWeight.bold)),
+                            if (selectedStartupId != null)
+                              GestureDetector(
+                                onTap: () => setState(() {
+                                  selectedStartupId = null;
+                                  _fetchGeneralDashboard();
+                                }),
+                                child: const Text('Limpar seleção', style: TextStyle(color: Color(0xFF386BF6), fontSize: 13, fontWeight: FontWeight.w600)),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      Expanded(
+                        child: _portfolio.isEmpty
+                            ? const Center(child: Text('Você não possui tokens.', style: TextStyle(color: Colors.grey)))
+                            : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: _portfolio.length,
+                          separatorBuilder: (context, index) => const Divider(color: Color(0xFFF0F0F0), height: 1),
+                          itemBuilder: (context, index) {
+                            final item = _portfolio[index];
+                            final isSelected = selectedStartupId == item['id'];
+                            final valCents = item['valorTotalCents'] as num;
+                            final variacao = (item['variacaoPercent'] as num).toDouble();
+                            final bool isPositive = variacao >= 0;
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    selectedStartupId = null;
+                                  } else {
+                                    selectedStartupId = item['id'];
+                                    _fetchStartupHistory(selectedStartupId!);
+                                  }
+                                });
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? primaryColor.withOpacity(0.08) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: isSelected ? primaryColor.withOpacity(0.3) : Colors.transparent),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 56, height: 56,
+                                      decoration: BoxDecoration(color: const Color(0xFF020C14), borderRadius: BorderRadius.circular(14)),
+                                      child: Center(child: Text(item['logoTexto'], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(item['nome'], style: const TextStyle(color: Color(0xFF020C14), fontSize: 16, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 2),
+                                          Text('${item['tokens']} tokens', style: const TextStyle(color: Color(0xFF505050), fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(_formatBRL(valCents / 100.0), style: const TextStyle(color: Color(0xFF020C14), fontSize: 16, fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                            '${isPositive ? '+' : ''}${variacao.toStringAsFixed(1)}%',
+                                            style: TextStyle(color: isPositive ? positiveColor : negativeColor, fontSize: 13, fontWeight: FontWeight.w600)
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

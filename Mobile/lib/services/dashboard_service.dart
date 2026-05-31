@@ -11,17 +11,31 @@ class DashboardService {
   Future<String> fetchUserName() async {
     try {
       final user = _auth.currentUser;
+
       if (user != null) {
-        // Tenta buscar o nome salvo no documento do usuário no Firestore
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists && doc.data() != null) {
-          return doc.data()!['nome'] ?? user.displayName ?? 'Investidor';
+        // 1. Tenta pegar primeiro o nome direto do perfil de autenticação
+        if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+          return user.displayName!;
         }
-        return user.displayName ?? 'Investidor';
+
+        // 2. Se não tiver no Auth, vai buscar no Firestore
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+
+        if (doc.exists && doc.data() != null) {
+          final data = doc.data()!;
+          // Tenta ler 'nome', se for nulo tenta 'name', se for nulo usa o padrão
+          return data['nome'] ?? data['name'] ?? 'parou aqui';
+        }
       }
-      return 'Investidor';
+
+      // Se o usuário estiver nulo no Firebase Auth por algum motivo
+      print("Aviso: _auth.currentUser retornou nulo.");
+      return 'ta nulo';
+
     } catch (e) {
-      return 'Investidor'; // Fallback de segurança em caso de erro
+      // Se der erro de permissão (Missing or insufficient permissions) vai aparecer aqui
+      print("Erro ao buscar nome do usuário no banco: $e");
+      return 'o erro ao buscar nome do usuário';
     }
   }
 

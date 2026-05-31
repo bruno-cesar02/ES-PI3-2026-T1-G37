@@ -1,35 +1,30 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
 class GetWalletDataService {
-  // Configurando para a mesma região do seu exemplo anterior
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   Future<Map<String, dynamic>?> fetchWalletDetails() async {
     try {
-      // ATENÇÃO: Substitua 'getWalletDetails' pelo nome exato da sua Cloud Function exportada no backend
       final callable = _functions.httpsCallable('getWalletDetails');
-
       final result = await callable.call();
-
-      // Dependendo de como você estruturou o retorno no Node.js, os dados estarão em result.data
       final response = result.data as Map<dynamic, dynamic>;
 
-      // Caso a sua função retorne os dados dentro de uma chave "data" (ex: { data: { patrimonio: ... } })
-      // você usaria response["data"]. Se retornar o objeto direto, use o código abaixo:
       return Map<String, dynamic>.from(response);
-
     } catch (e) {
       print("Erro ao buscar dados da carteira via Callable: $e");
       return null;
     }
   }
 
-  Future<bool> updateWallet(double valor) async {
+  Future<bool> updateWallet(double valorEmReais) async {
     try {
       final callable = _functions.httpsCallable('updateWallet');
 
+
+      final int valorEmCentavos = (valorEmReais * 100).round();
+
       await callable.call({
-        "balanceChangeCents": valor,
+        "balanceChangeCents": valorEmCentavos, // Enviando em centavos!
       });
 
       return true; // Sucesso
