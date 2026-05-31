@@ -345,7 +345,7 @@ export async function listStartupsItems(): Promise<StartupListItem[]> {
 export async function getStartupById(startupId: string): Promise<StartupDocument | undefined> {
   const startupSnapshot = await startupsCollection.doc(startupId).get();
   if (!startupSnapshot.exists) return undefined;
-  return startupSnapshot.data() as StartupDocument;
+  return { ...startupSnapshot.data(), id: startupSnapshot.id } as StartupDocument;
 }
 
 export async function seedDemoStartups(): Promise<string[]> {

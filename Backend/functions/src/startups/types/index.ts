@@ -29,6 +29,7 @@ export type ExternalMember = {
 }
 
 export type StartupDocument = {
+  id?: string,
   name: string,
   stage: StartupStages,
   shortDescription: string,
