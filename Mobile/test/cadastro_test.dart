@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-// ── Configurações do Emulador Local
 const _projectId = 'pi3-g37';
 const _functionsOrigin = 'http://127.0.0.1:5001';
 
