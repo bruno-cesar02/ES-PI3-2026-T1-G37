@@ -47,7 +47,7 @@ export async function buyTokens(userId: string, startupId: string, tokenAmount: 
     const totalPriceCents = tokenAmount * currentPriceCents;
     
     
-    const newPriceCents = Math.round(currentPriceCents * Math.pow(1.01, tokenAmount));
+    const newPriceCents = Math.round(currentPriceCents * Math.pow(1.001, tokenAmount));
     
     
     const oldTotalPatrimony = totalTokensIssued * currentStartupAvgCents;
@@ -322,46 +322,68 @@ export async function acceptExchange(exchangeId: string, startupId: string, buye
     const currentStartupPrice = startupDoc.data()?.currentTokenPriceCents || 0;
     const totalTokensIssued = startupDoc.data()?.totalTokensIssued || 1; 
 
-    // ==========================================
-    // 3. BLOCO DE ESCRITAS (WRITES)
-    // ==========================================
-    
-    // A. Desvalorização da Startup
-    if (pricePaidPerToken < currentStartupPrice) {
+    // --- NOVA LÓGICA DE PRECIFICAÇÃO (ALTA E BAIXA) ---
+    // Só recalculamos se o preço pago for diferente do preço atual
+    if (pricePaidPerToken !== currentStartupPrice) {
       const safeQuantitySold = Math.min(quantitySold, totalTokensIssued);
       const totalValuePreserved = (totalTokensIssued - safeQuantitySold) * currentStartupPrice;
       const totalValueSold = safeQuantitySold * pricePaidPerToken;
       
       let newPriceCents = Math.round((totalValuePreserved + totalValueSold) / totalTokensIssued);
 
-      if (newPriceCents >= currentStartupPrice && pricePaidPerToken < currentStartupPrice) {
-        newPriceCents = currentStartupPrice - 1; // Trava de sensibilidade
+      // Trava de Sensibilidade para Queda
+      if (pricePaidPerToken < currentStartupPrice && newPriceCents >= currentStartupPrice) {
+        newPriceCents = currentStartupPrice - 1; 
+      }
+      // Trava de Sensibilidade para Alta
+      else if (pricePaidPerToken > currentStartupPrice && newPriceCents <= currentStartupPrice) {
+        newPriceCents = currentStartupPrice + 1; 
       }
 
-      if (newPriceCents < currentStartupPrice) {
-        transaction.update(startupRef, {
-          currentTokenPriceCents: newPriceCents,
-          previousTokenPriceCents: currentStartupPrice,
-          averageTokenPriceCents: newPriceCents
-        });
+      // Atualiza o documento da startup com o novo preço (para cima ou para baixo)
+      transaction.update(startupRef, {
+        currentTokenPriceCents: newPriceCents,
+        previousTokenPriceCents: currentStartupPrice,
+      });
 
-        const priceHistoryRef = startupRef.collection("priceHistory").doc();
-        transaction.set(priceHistoryRef, {
-          priceCents: newPriceCents,
-          tokensDiff: 0, 
-          reason: "exchange_depreciation_weighted",
-          triggeringVolume: quantitySold,
-          triggeringPrice: pricePaidPerToken,
-          createdAt: FieldValue.serverTimestamp()
-        });
-      }
+      // Registra no histórico se foi valorização ou desvalorização
+      const isAppreciation = pricePaidPerToken > currentStartupPrice;
+      const priceHistoryRef = startupRef.collection("priceHistory").doc();
+      
+      transaction.set(priceHistoryRef, {
+        priceCents: newPriceCents,
+        tokensDiff: 0, 
+        reason: isAppreciation ? "exchange_appreciation_weighted" : "exchange_depreciation_weighted",
+        triggeringVolume: quantitySold,
+        triggeringPrice: pricePaidPerToken,
+        createdAt: FieldValue.serverTimestamp()
+      });
     }
 
-    // B. Transferência Financeira
+    // ==========================================
+    // 3. BLOCO DE ESCRITAS (WRITES)
+    // ==========================================
+
+    // B. Transferência Financeira e Lucro Realizado
     transaction.update(buyerRef, { 
       wallet: { ...buyerWalletData, balanceCents: buyerBalance - totalVolumeCents }
     });
-    transaction.update(sellerRef, { "wallet.balanceCents": FieldValue.increment(totalVolumeCents) });
+
+    // Pega o PM correto do vendedor para a conta não quebrar
+    let sellerAveragePurchasePrice = 0;
+    if (sellerInvestedDoc.exists) {
+      sellerAveragePurchasePrice = sellerInvestedDoc.data()?.averagePurchasePriceCents || 0;
+    }
+
+    // 1. Descobre de quanto foi a porrada (Lucro ou Prejuízo daquela venda)
+    // (Preço da Venda - Preço Médio de Compra) * Quantidade
+    const realizedProfitLoss = (pricePaidPerToken - sellerAveragePurchasePrice) * quantitySold;
+
+    // 2. Salva isso DEFINITIVAMENTE no perfil do usuário
+    transaction.update(sellerRef, { 
+      "wallet.balanceCents": FieldValue.increment(totalVolumeCents),
+      "wallet.realizedProfitLoss": FieldValue.increment(realizedProfitLoss) // Adiciona ao histórico vitalício
+    });
 
     // C. Transferência de Tokens
     if (buyerInvestedDoc.exists) {

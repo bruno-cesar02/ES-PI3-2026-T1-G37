@@ -74,7 +74,7 @@ export const getStartupDetails = onCall(async (request) => {
 
   return {
     data: {
-      id: startupId,
+      id: startupId,  
       ...startup,
       createdAt: startup.createdAt?.toDate().toISOString() ?? null,
       updatedAt: startup.updatedAt?.toDate().toISOString() ?? null,
