@@ -44,143 +44,122 @@ Este sistema faz parte do **Projeto Integrador 3** do curso de **Engenharia de S
 ## 🎯 Funcionalidades
 
 ### Autenticação
-
-- Cadastro de usuários com e-mail, CPF, telefone e senha
-- Login seguro com recuperação de senha
+* Cadastro de usuários com e-mail, CPF, telefone e senha
+* Login seguro com recuperação de senha
+* Segurança avançada com Autenticação de 2 Fatores (MFA) via SMS
 
 ### Catálogo de Startups
+* Visualização de startups cadastradas no ecossistema
+* Informações detalhadas: descrição, estrutura societária, capital aportado
+* Filtros por estágio de desenvolvimento (Nova ideia, Em operação, Em expansão)
+* Acesso a documentos: sumário executivo, pitch decks (PDF), vídeos demo embutidos
 
-- Visualização de startups cadastradas no ecossistema
-- Informações detalhadas: descrição, estrutura societária, capital aportado
-- Filtros por estágio de desenvolvimento (Nova ideia, Em operação, Em expansão)
-- Acesso a documentos: sumário executivo, plano de negócios, vídeos demo
-
-### Negociação Simulada de Tokens
-
-- Balcão de compra/venda de tokens (simulado)
-- Carteira digital com saldo fictício em reais
-- Ofertas de compra/venda entre usuários cadastrados
+### Negociação Simulada de Tokens (Exchange P2P)
+* Balcão de compra/venda de tokens (simulado)
+* Carteira digital com saldo fictício em reais
+* Ofertas de compra/venda de mercado secundário entre usuários cadastrados
 
 ### Dashboard de Investimentos
-
-- Acompanhamento de valorização dos tokens
-- Gráficos de variação (diário, semanal, mensal, YTD)
-- Cálculo de tendências baseado em transações simuladas
+* Acompanhamento de valorização dos tokens da carteira
+* Gráficos de variação de preços e tendências baseadas no histórico de transações do Firestore
 
 ### Interação com Startups
-
-- Envio de perguntas públicas/privadas aos empreendedores
-- Feed de atualizações e eventos das startups
+* Envio de perguntas públicas/privadas aos empreendedores (Mural de Q&A)
 
 ---
 
 ## 🛠️ Tecnologias
 
-### Backend
-
-- **Node.js** (LTS) — Ambiente de execução
-- **TypeScript / JavaScript** — Linguagem
-- **Firebase Firestore** — Banco de dados NoSQL
+### Backend (Serverless)
+* **Node.js** (LTS) — Ambiente de execução
+* **TypeScript** — Linguagem principal
+* **Firebase Cloud Functions** — Regras de negócio, endpoints callable e integração segura
+* **Firebase Firestore** — Banco de dados NoSQL
+* **Firebase Authentication** — Gerenciamento de usuários e segurança
+* **Firebase Storage** — Hospedagem de imagens (logos) e PDFs
 
 ### Mobile
-
-- **Flutter** (3.x) — Framework multiplataforma
-- **Dart** — Linguagem
+* **Flutter** (3.x) — Framework multiplataforma
+* **Dart** — Linguagem
 
 ### Ferramentas de Desenvolvimento
-
-- **Visual Studio Code** / **Android Studio** — IDEs
-- **Git** — Controle de versão
-- **GitHub** — Hospedagem de código e gestão de projeto
-- **GitHub Projects** — Gerenciamento de tarefas (Kanban)
+* **Visual Studio Code** / **Android Studio** — IDEs
+* **Git** — Controle de versão
+* **GitHub** — Hospedagem de código e gestão de projeto
+* **GitHub Projects** — Gerenciamento de tarefas (Kanban)
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Como Executar e Testar
 
 ### Pré-requisitos
+* [Node.js](https://nodejs.org/) (versão LTS mais recente)
+* [Flutter SDK](https://flutter.dev/) (3.x ou superior)
+* [Git](https://git-scm.com/)
+* Conta no [Firebase](https://firebase.google.com/) com projeto configurado
 
-- [Node.js](https://nodejs.org/) (versão LTS mais recente)
-- [Flutter SDK](https://flutter.dev/) (3.x ou superior)
-- [Git](https://git-scm.com/)
-- Conta no [Firebase](https://firebase.google.com/) com projeto configurado
-
-### Backend
-
-1. Clone o repositório:
-
+### 1. Clone o repositório
 ```bash
-git clone https://github.com/bruno-cesar02/ES-PI3-2026-T0101-G37.git
-cd ES-PI3-2026-T0101-G37/backend
+git clone https://github.com/bruno-cesar02/ES-PI3-2026-T1-G37.git
+cd ES-PI3-2026-T1-G37
 ```
 
-2. Instale as dependências:
-
+### 2. Rodando o Backend Localmente (Emuladores)
 ```bash
+cd Backend/functions
 npm install
+npm run build
+firebase emulators:start
 ```
 
-3. Configure as variáveis de ambiente:
-   - Crie um arquivo `.env` na raiz do `backend`
-   - Adicione as credenciais do Firebase e outras configurações necessárias
-
-4. Execute o servidor:
-
+### 3. Rodando o Mobile
 ```bash
-npm run dev
-```
-
-### Mobile
-
-1. Entre na pasta do aplicativo:
-
-```bash
-cd mobile
-```
-
-2. Instale as dependências do Flutter:
-
-```bash
+cd Mobile
 flutter pub get
+flutter run
 ```
 
-3. Configure o Firebase:
-   - Adicione o arquivo `google-services.json` na pasta `android/app`
-   - Adicione o arquivo `GoogleService-Info.plist` na pasta `ios/Runner`
-
-4. Execute o aplicativo:
+### 4. Executando Testes Automatizados (TDD)
+O sistema possui testes de integração validados diretamente no ambiente Firebase real ou no emulador.
 
 ```bash
-flutter run
+cd Mobile
+flutter test test/integration_test.dart
 ```
 
 ---
 
 ## 📂 Estrutura do Projeto
 
-```
-ES-PI3-2026-T0101-G37/
-├── backend/                 # API Node.js + TypeScript
-│   ├── src/
-│   │   ├── controllers/     # Lógica de negócio
-│   │   ├── models/          # Modelos de dados (Firestore)
-│   │   ├── routes/          # Rotas da API
-│   │   ├── middlewares/     # Autenticação, validação
-│   │   └── config/          # Configurações (Firebase, etc.)
-│   ├── package.json
-│   └── tsconfig.json
+Abaixo a estrutura com a arquitetura serverless focada em domínios:
+
+```text
+ES-PI3-2026-T1-G37/
+├── Backend/
+│   ├── functions/
+│   │   ├── src/
+│   │   │   ├── exchange/    # Handlers, repositories e types do Balcão de Negócios
+│   │   │   ├── startups/    # Handlers, repositories e types do Catálogo e Q&A
+│   │   │   ├── users/       # Handlers, repositories e types de Autenticação e Perfis
+│   │   │   └── wallet/      # Handlers, repositories e types da Carteira e Saldos
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── firestore.rules      # Regras de segurança do banco
+│   └── firebase.json
 │
-├── mobile/                  # Aplicativo Flutter
+├── Mobile/                  # Aplicativo Flutter
 │   ├── lib/
-│   │   ├── screens/         # Telas do app
-│   │   ├── widgets/         # Componentes reutilizáveis
-│   │   ├── services/        # Integração com API
-│   │   ├── models/          # DTOs
-│   │   └── main.dart
+│   │   ├── config/          # Instâncias e inicializadores
+│   │   ├── models/          # Entidades do app
+│   │   ├── screens/         # Telas (Catálogo, Perfil, Gavetas, etc)
+│   │   ├── services/        # Serviços integrados às Functions
+│   │   ├── theme/           # Cores e tipografia
+│   │   └── widgets/         # Componentes visuais
+│   ├── test/                # Testes de integração (TDD)
 │   └── pubspec.yaml
 │
 ├── Docs/                    # Documentação e artefatos do projeto
-│   └── planilha_startups_PI3_G37.xlsx
+│   ├── planilha_startups_PI3_G37.xlsx
 │   └── MesclaInvest_MapaMental.pdf
 │
 └── README.md
