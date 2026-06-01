@@ -1,3 +1,6 @@
+/*Nicolas Carvalho Nogueira
+* RA 24801664*/
+
 import 'package:flutter/material.dart';
 import 'package:mobile/screens/tela_logada_screen.dart';
 import 'package:mobile/services/logar_service.dart';
@@ -6,6 +9,7 @@ import 'campo_texto.dart';
 import 'gaveta_cadastro.dart';
 import 'gaveta_esqueceu_senha.dart';
 import 'notificacao.dart';
+import 'gaveta_mfa.dart';
 
 class GavetaLogin extends StatefulWidget {
   const GavetaLogin({super.key});
@@ -34,25 +38,40 @@ class _GavetaLoginState extends State<GavetaLogin> {
 
     setState(() => _carregando = true);
 
-    try {
-      final sucesso = await LogarService.logar(
-        email: _emailController.text.trim(),
-        senha: _senhaController.text,
-      );
+    final resultado = await LogarService.logar(
+      email: _emailController.text.trim(),
+      senha: _senhaController.text,
+    );
 
-      if (sucesso && mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => TelaLogadaScreen()),
-              (_) => false,
+    if (!mounted) return;
+
+    if (resultado.sucesso) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const TelaLogadaScreen()),
+            (_) => false,
+      );
+    } else if (resultado.requer2FA && resultado.resolver != null) {
+      // 1. Armazene o contexto da tela principal (a tela que está atrás da gaveta)
+      // O 'Navigator.of(context, rootNavigator: true)' garante que pegamos o Navigator da tela base
+      final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+      // 2. Feche a gaveta de login
+      Navigator.of(context).pop();
+
+      // 3. Aguarde um pouco e abra a nova gaveta usando o contexto da tela base (rootNavigator)
+      Future.delayed(const Duration(milliseconds: 300), () {
+        showModalBottomSheet(
+          context: rootNavigator.context, // <- Usando o contexto da tela principal
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => GavetaMfa(resolver: resultado.resolver!),
         );
-      }
-    } catch (e) {
-      if (mounted) {
-        Notificacao.erro(context, e.toString().replaceAll('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _carregando = false);
+      });
+    } else {
+      Notificacao.erro(context, resultado.erro ?? 'Erro ao fazer login.');
     }
+
+    if (mounted) setState(() => _carregando = false);
   }
 
   void _irParaCadastro() {
@@ -81,28 +100,14 @@ class _GavetaLoginState extends State<GavetaLogin> {
       child: Column(
         children: [
           const SizedBox(height: 12),
-          Container(
-            width: 60,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Colors.white38,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+          Container(width: 60, height: 5, decoration: BoxDecoration(color: Colors.white38, borderRadius: BorderRadius.circular(10))),
           const SizedBox(height: 24),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(32, 0, 32, bottomInset + 16),
               child: Column(
                 children: [
-                  const Text(
-                    'Login',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  const Text('Login', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   RichText(
                     textAlign: TextAlign.center,
@@ -110,31 +115,14 @@ class _GavetaLoginState extends State<GavetaLogin> {
                       style: TextStyle(color: Colors.white70, fontSize: 14),
                       children: [
                         TextSpan(text: 'Bem-vindo de volta ao '),
-                        TextSpan(
-                          text: 'MesclaInvest',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        TextSpan(text: 'MesclaInvest', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 28),
-
-                  CampoTexto(
-                    label: 'Email',
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
+                  CampoTexto(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
                   const SizedBox(height: 12),
-
-                  CampoSenha(
-                    label: 'Senha',
-                    controller: _senhaController,
-                    mostrarRequisitos: false,
-                  ),
-
+                  CampoSenha(label: 'Senha', controller: _senhaController, mostrarRequisitos: false),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -150,30 +138,17 @@ class _GavetaLoginState extends State<GavetaLogin> {
                           );
                         });
                       },
-                      child: const Text(
-                        'Esqueceu a senha?',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
+                      child: const Text('Esqueceu a senha?', style: TextStyle(color: Colors.white70, fontSize: 13)),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   _carregando
                       ? const CircularProgressIndicator(color: Color(0xFF1E90FF))
-                      : BotaoPrimario(
-                    texto: 'Entrar',
-                    isPrimary: true,
-                    onPressed: _enviarLogin,
-                  ),
-
+                      : BotaoPrimario(texto: 'Entrar', isPrimary: true, onPressed: _enviarLogin),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: _irParaCadastro,
-                    child: const Text(
-                      'Não tem conta? Cadastre-se',
-                      style: TextStyle(color: Colors.white70),
-                    ),
+                    child: const Text('Não tem conta? Cadastre-se', style: TextStyle(color: Colors.white70)),
                   ),
                 ],
               ),

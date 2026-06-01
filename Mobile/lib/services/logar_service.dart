@@ -1,34 +1,50 @@
 /*Nicolas Carvalho Nogueira
-* RA: 24801664
-* */
+* RA 24801664*/
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mobile/firebase_options.dart';
+
+class ResultadoLogin {
+  final bool sucesso;
+  final bool requer2FA;
+  final MultiFactorResolver? resolver;
+  final String? erro;
+
+  ResultadoLogin({
+    required this.sucesso,
+    this.requer2FA = false,
+    this.resolver,
+    this.erro,
+  });
+}
 
 class LogarService {
-  static Future<bool> logar({
+  static Future<ResultadoLogin> logar({
     required String email,
     required String senha,
-}) async {
+  }) async {
     try {
-      final callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1').httpsCallable('loginUser');
-      final resposta = await callable.call({
-        'email' : email,
-        'senha': senha,
-        'apiKey': DefaultFirebaseOptions.currentPlatform.apiKey,
-      });
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+      return ResultadoLogin(sucesso: true);
 
-      final customToken = resposta.data['data']['customToken'];
-
-      await FirebaseAuth.instance.signInWithCustomToken(customToken);
-
-      return true;
-
-    } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'Erro desconhecido no servidor.');
+    } on FirebaseAuthMultiFactorException catch (e) {
+      return ResultadoLogin(
+        sucesso: false,
+        requer2FA: true,
+        resolver: e.resolver,
+      );
+    } on FirebaseAuthException catch (e) {
+      String mensagemErro = 'Erro ao fazer login.';
+      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        mensagemErro = 'E-mail ou senha inválidos.';
+      } else if (e.code == 'too-many-requests') {
+        mensagemErro = 'Muitas tentativas falhas. Tente novamente mais tarde.';
+      }
+      return ResultadoLogin(sucesso: false, erro: mensagemErro);
     } catch (e) {
-      throw Exception('Erro de conexão: Verifique sua internet.');
+      return ResultadoLogin(sucesso: false, erro: 'Erro inesperado: $e');
     }
   }
 }
