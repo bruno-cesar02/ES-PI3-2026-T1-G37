@@ -1,4 +1,5 @@
-/* Seu Nome - RA: XXXXXXXX */
+/* Eduardo Neves de Aguiar 
+  RA:24026029*/
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordService {

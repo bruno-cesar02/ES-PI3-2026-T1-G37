@@ -1,3 +1,7 @@
+/*
+Nome: Otávio Augusto Antunes Marquez
+RA: 24025832
+*/ 
 import {setGlobalOptions} from "firebase-functions";
 
 setGlobalOptions({

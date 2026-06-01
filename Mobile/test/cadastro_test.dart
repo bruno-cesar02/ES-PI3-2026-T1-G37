@@ -2,12 +2,23 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-const _projectId = 'pi3-g37';
-const _functionsOrigin = 'http://127.0.0.1:5001';
-
+const _projectId = 'pi3-g37'; // Confirme se este é o ID correto do seu projeto
+const _apiKey = 'AIzaSyADO1CV7lulvmQWDeBKengiXFvjonGZ3i8'; // Pegue nas configurações do Firebase > Geral > Chave de API da Web
 
 Uri _functionUri(String functionName) {
-  return Uri.parse('$_functionsOrigin/$_projectId/southamerica-east1/$functionName');
+  // Aponta direto para a URL real do Firebase Functions
+  return Uri.parse('https://southamerica-east1-$_projectId.cloudfunctions.net/$functionName');
+  // Nota: Se você fez o deploy em us-central1, troque 'southamerica-east1' por 'us-central1'
+}
+
+Uri _authSignUpUri() {
+  // Aponta para o Auth real do Google
+  return Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_apiKey');
+}
+
+Uri _authSignInUri() {
+  // Aponta para o Auth real do Google
+  return Uri.parse('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$_apiKey');
 }
 
 void main() {

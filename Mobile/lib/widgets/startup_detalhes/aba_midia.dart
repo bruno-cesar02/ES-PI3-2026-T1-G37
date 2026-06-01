@@ -1,5 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Mídia — vídeos demonstrativos e materiais. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';

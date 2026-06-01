@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import { HttpsError, onCall } from "firebase-functions/https";
 import { requireAuthenticatedUser } from "../../users/shared/auth";
 import { db } from "../shared/firebase";

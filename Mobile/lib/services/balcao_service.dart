@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/oferta_model.dart';
 

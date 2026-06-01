@@ -1,5 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Geral — sumário executivo, descrição e preço do token. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';

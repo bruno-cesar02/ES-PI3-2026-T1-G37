@@ -1,5 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Widgets auxiliares reutilizáveis da tela de detalhes. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';

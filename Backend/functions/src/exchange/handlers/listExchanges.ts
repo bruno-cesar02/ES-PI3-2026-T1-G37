@@ -1,3 +1,7 @@
+/*
+Nome: Otávio Augusto Antunes Marquez
+RA: 24025832
+*/ 
 import { onCall, HttpsError } from "firebase-functions/https";
 import { requireAuthenticatedUser } from "../../users/shared/auth";
 import { db } from "../shared/firebase";

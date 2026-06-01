@@ -1,6 +1,5 @@
 /* Bruno César Gonçalves Lima Mota
-   RA: 24795502
-   Modal para simulação de investimento (compra de tokens). */
+   RA: 24795502*/
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';

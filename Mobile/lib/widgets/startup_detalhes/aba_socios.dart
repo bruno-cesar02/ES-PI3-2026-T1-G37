@@ -1,5 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Sócios — estrutura societária, fundadores e mentores. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';

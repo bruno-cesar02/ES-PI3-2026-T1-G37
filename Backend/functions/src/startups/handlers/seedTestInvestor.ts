@@ -1,9 +1,6 @@
 /* Bruno César Gonçalves Lima Mota
    RA: 24795502
-   Handler de seed: marca o usuário autenticado como investidor de uma
-   startup. Útil para testar perguntas privadas e funcionalidades de
-   investidor antes da feature de compra de tokens estar pronta.
-   Funciona apenas no emulador. */
+*/
 
 import {HttpsError, onCall} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";

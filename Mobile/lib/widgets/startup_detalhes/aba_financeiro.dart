@@ -1,5 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Financeiro — métricas financeiras e botões de compra/venda de tokens. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';

@@ -1,6 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Modal para criar oferta de venda no balcão a partir da tela de detalhes da startup.
-   Atalho: a startup já vem do contexto (widget.startup), sem precisar selecionar. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';

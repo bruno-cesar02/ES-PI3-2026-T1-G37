@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 class OfertaModel {
   final String id;
   final String startupId;

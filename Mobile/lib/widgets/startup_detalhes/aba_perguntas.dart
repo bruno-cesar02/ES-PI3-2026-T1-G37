@@ -1,6 +1,5 @@
-/* Bruno César Gonçalves Lima Mota — RA: 24795502
-   Aba Perguntas — accordion de Q&A + envio de novas perguntas.
-   Exibe perguntas privadas (apenas para investidores) com ícone de cadeado. */
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../models/startup_model.dart';

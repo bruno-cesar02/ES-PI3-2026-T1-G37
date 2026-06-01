@@ -1,9 +1,13 @@
+/*
+Nome: Otávio Augusto Antunes Marquez
+RA: 24025832
+*/ 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/services/getWalletDataService.dart';
 import 'package:mobile/screens/startup_detalhes_screen.dart';
 
-// ─── NOVIDADES: helpers de formatação (moeda BR e data) ───
+
 final _money = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
 String _formatarData(dynamic raw) {
@@ -14,7 +18,7 @@ String _formatarData(dynamic raw) {
   return DateFormat('dd/MM/yyyy · HH:mm').format(d);
 }
 
-// Mostra a imagem da startup se houver URL;
+
 Widget _startupLogo(String? url) {
   const double size = 48;
   final fallback = Container(
@@ -38,7 +42,7 @@ Widget _startupLogo(String? url) {
     ),
   );
 }
-// ──────────────────────────────────────────────────────────
+
 
 class CarteiraScreen extends StatefulWidget {
   const CarteiraScreen({super.key});
@@ -68,7 +72,7 @@ class _CarteiraScreenState extends State<CarteiraScreen> {
     });
   }
 
-  // ─── NOVO MODAL ESTILO BOTTOM SHEET ───
+ 
   Future<void> _mostrarDialogoAdicionarSaldo() async {
     String valorSelecionado = "500";
     final TextEditingController valorController = TextEditingController(text: "500");
@@ -220,9 +224,21 @@ class _CarteiraScreenState extends State<CarteiraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final patrimonio = _walletData?['wallet']['totalequity'] / 100 ?? '0,00';
-    final saldo = _walletData?['wallet']['balanceCents'] / 100 ?? '0,00';
-    final lucro = (_walletData?['wallet']['totalProfitLoss'] + _walletData?['wallet']['realizedProfitLoss'] ?? 0)/ 100 ?? '0,00';
+    final wallet = _walletData?['wallet'] as Map?;
+
+    // 2. Extrai os valores em centavos com fallback para 0 caso venham null da API
+    final equityCents = wallet?['totalequity'] as num? ?? 0;
+    final balanceCents = wallet?['balanceCents'] as num? ?? 0;
+    final totalPL = wallet?['totalProfitLoss'] as num? ?? 0;
+    final realizedPL = wallet?['realizedProfitLoss'] as num? ?? 0;
+
+    // 3. Faz a divisão e já formata tudo no padrão String "0,00"
+    final patrimonio = (equityCents / 100).toStringAsFixed(2).replaceAll('.', ',');
+    final saldo = (balanceCents / 100).toStringAsFixed(2).replaceAll('.', ',');
+
+    // Calcula o lucro separando a variável numérica para a verificação de cor depois
+    final lucroNum = (totalPL + realizedPL) / 100;
+    final String lucro = lucroNum.toStringAsFixed(2).replaceAll('.', ',');
 
     final tokens = (_walletData?['invested'] as List<dynamic>? ?? [])
         .where((token) => (token['quantity'] as num? ?? 0) > 0)
@@ -521,7 +537,7 @@ class _CarteiraScreenState extends State<CarteiraScreen> {
                   ),
                 ),
 
-                // ─── NOVIDADE: Histórico (uma seção só, cards colados) ───
+                
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 12,

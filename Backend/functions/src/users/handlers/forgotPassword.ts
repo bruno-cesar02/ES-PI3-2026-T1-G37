@@ -1,4 +1,5 @@
-/* Seu Nome - RA: XXXXXXXX */
+/* Eduardo Neves de Aguiar 
+  RA:24026029*/
 import {HttpsError, onCall} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import {auth} from "../shared/firebase";

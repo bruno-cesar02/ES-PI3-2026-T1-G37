@@ -1,7 +1,5 @@
 /* Bruno César Gonçalves Lima Mota
-   RA: 24795502
-   Detalhes da startup — agora traz perguntas privadas para investidores e
-   quantidade de tokens que o usuário possui daquela startup. */
+   RA: 24795502*/
 
 import {HttpsError, onCall} from "firebase-functions/https";
 import {requireAuthenticatedUser} from "../../users/shared/auth";

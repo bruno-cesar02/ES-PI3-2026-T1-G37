@@ -1,6 +1,5 @@
 /* Bruno César Gonçalves Lima Mota
-   RA: 24795502
-   Modal para envio de perguntas públicas ou privadas. */
+   RA: 24795502*/
 
 import 'package:flutter/material.dart';
 import '../../services/StartupDetails_service.dart';

@@ -1,3 +1,5 @@
+/* Bruno César Gonçalves Lima Mota
+   RA: 24795502*/
 enum QuestionVisibility { publica, privada }
 
 class Socio {
