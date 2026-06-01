@@ -1,3 +1,6 @@
+//Nicolas Carvalho Nogueira
+//RA 24801664
+
 import { HttpsError, onCall } from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import { auth } from "../shared/firebase";

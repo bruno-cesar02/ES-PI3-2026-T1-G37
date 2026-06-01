@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/screens/profile_screen.dart';
 import 'catalogo_screen.dart';
 import 'carteira_screen.dart';
 import 'balcao_screen.dart';// Import da tela do Balcão
@@ -16,11 +17,11 @@ class _TelaLogadaScreenState extends State<TelaLogadaScreen> {
 
   // 1. LISTA DE TELAS (Exatamente 5 itens)
   final List<Widget> _telas = const [
-    CatalogoScreen(),                         // Índice 0: Catálogo
-    CarteiraScreen(),                         // Índice 1: Carteira
-    BalcaoScreen(),                     // Índice 2: Balcão
+    CatalogoScreen(),  // Índice 0: Catálogo
+    CarteiraScreen(),  // Índice 1: Carteira
+    BalcaoScreen(),    // Índice 2: Balcão
     DashboardScreen(), // Índice 3: Dashboard
-    Center(child: Text('Perfil - Em breve')),    // Índice 4: Perfil
+    ProfileScreen()    // Índice 4: Perfil
   ];
 
   @override
