@@ -222,7 +222,7 @@ class _CarteiraScreenState extends State<CarteiraScreen> {
   Widget build(BuildContext context) {
     final patrimonio = _walletData?['wallet']['totalequity'] / 100 ?? '0,00';
     final saldo = _walletData?['wallet']['balanceCents'] / 100 ?? '0,00';
-    final lucro = _walletData?['wallet']['totalProfitLoss'] / 100 ?? '0,00';
+    final lucro = (_walletData?['wallet']['totalProfitLoss'] + _walletData?['wallet']['realizedProfitLoss'] ?? 0)/ 100 ?? '0,00';
 
     final tokens = (_walletData?['invested'] as List<dynamic>? ?? [])
         .where((token) => (token['quantity'] as num? ?? 0) > 0)
@@ -500,10 +500,10 @@ class _CarteiraScreenState extends State<CarteiraScreen> {
                                             fontSize: 12, fontWeight: FontWeight.w600),
                                       ),
                                       Text(
-                                        token['variacao'] ?? "+ 0.0%",
+                                        ((token['currentPriceCents'] - token['averagePurchasePriceCents']) / 100).toString() + "%" ?? "+ 0.0%",
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: (token['variacao']?.toString().startsWith('-') ?? false)
+                                          color: (((token['currentPriceCents'] - token['averagePurchasePriceCents']) / 100)< 0)
                                               ? Colors.red
                                               : Colors.green,
                                         ),

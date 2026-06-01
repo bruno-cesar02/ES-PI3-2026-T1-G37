@@ -34,20 +34,8 @@ class AbaFinanceiro extends StatelessWidget {
           mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.4, children: [
             _FinCard(label: 'Capital Aportado', valor: startup.capitalAportado, sub: 'Simulado'),
             _FinCard(label: 'Tokens Emitidos', valor: _formatTokens(startup.tokensEmitidos), sub: 'Total'),
-            _FinCard(label: 'Previsão Receita', valor: startup.previsaoReceita, sub: '2026'),
-            _FinCard(label: 'Margem Bruta', valor: startup.margemBrutaAlvo, sub: 'Alvo'),
           ]),
       const SizedBox(height: 12),
-      DetalhesCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('CPV', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
-          Text(startup.cpv, style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.w700)),
-        ]),
-        const SizedBox(height: 8),
-        ClipRRect(borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(value: cpvFraction, minHeight: 6,
-                backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary))),
-      ])),
       if (isInvestor) ...[
         const SizedBox(height: 12),
         Container(padding: const EdgeInsets.all(14),

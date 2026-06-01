@@ -23,56 +23,7 @@ Future<void> _abrirLink(String? urlStr) async {
   }
 }
 
-/// Função que abre o vídeo em uma janelinha flutuante (Dialog) bonita e clean
-void _abrirVideoNoApp(BuildContext context, String? urlStr) {
-  if (urlStr == null || urlStr.trim().isEmpty) return;
 
-  // Função manual para extrair o ID do YouTube
-  String? extrairIdDoYoutube(String url) {
-    final regExp = RegExp(
-      r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
-      caseSensitive: false,
-      multiLine: false,
-    );
-    final match = regExp.firstMatch(url);
-    return match?.group(1);
-  }
-
-  final videoId = extrairIdDoYoutube(urlStr);
-
-  if (videoId != null) {
-    // Cria o controlador moderno do iFrame
-    final controller = YoutubePlayerController(
-      params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
-        mute: false,
-      ),
-    );
-
-    // Carrega o vídeo e dá auto-play
-    controller.loadVideoById(videoId: videoId);
-
-    // Mostra o pop-up na tela
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent, // Fundo invisível para destacar só o vídeo
-          insetPadding: const EdgeInsets.all(16),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16), // A sua estética clean arredondada de volta!
-            child: YoutubePlayer(
-              controller: controller,
-            ),
-          ),
-        );
-      },
-    );
-  } else {
-    debugPrint('Não foi possível encontrar o ID do vídeo no link fornecido.');
-  }
-}
 
 class AbaMidia extends StatelessWidget {
   final Startup startup;
@@ -107,43 +58,106 @@ class AbaMidia extends StatelessWidget {
   }
 }
 
-class _VideoCard extends StatelessWidget {
+class _VideoCard extends StatefulWidget {
   final String title, subtitle, duration;
   final String? url;
-  const _VideoCard({required this.title, required this.subtitle, required this.duration, required this.url});
+
+  const _VideoCard({
+    required this.title,
+    required this.subtitle,
+    required this.duration,
+    required this.url
+  });
+
+  @override
+  State<_VideoCard> createState() => _VideoCardState();
+}
+
+class _VideoCardState extends State<_VideoCard> {
+  YoutubePlayerController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Se a URL do vídeo existir, extrai o ID e inicializa o player embutido
+    if (widget.url != null && widget.url!.trim().isNotEmpty) {
+      final regExp = RegExp(
+        r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+        caseSensitive: false,
+        multiLine: false,
+      );
+      final match = regExp.firstMatch(widget.url!);
+      final videoId = match?.group(1);
+
+      if (videoId != null) {
+        _controller = YoutubePlayerController(
+          params: const YoutubePlayerParams(
+            showControls: true,
+            showFullscreenButton: true,
+            mute: false,
+          ),
+        );
+        _controller!.loadVideoById(videoId: videoId);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.close(); // Importante para não pesar a memória ao sair da aba
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        decoration: BoxDecoration(color: AppColors.cardBg, border: Border.all(color: AppColors.cardBorder), borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.hardEdge,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _abrirVideoNoApp(context, url),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SizedBox(height: 144, width: double.infinity,
-                  child: Stack(fit: StackFit.expand, children: [
-                    Container(decoration: const BoxDecoration(gradient: LinearGradient(
-                        begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF020C14), Color(0xFF0F2050)]))),
-                    Center(child: Container(width: 56, height: 56,
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12)]),
-                        child: const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 30))),
-                    Positioned(left: 12, bottom: 12,
-                        child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(999)),
-                            child: Text(duration, style: const TextStyle(color: Colors.white, fontSize: 11)))),
-                  ])),
-              Padding(padding: const EdgeInsets.all(12),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text(subtitle, style: const TextStyle(color: Color(0xFF999999), fontSize: 12)),
-                  ])),
-            ]),
-          ),
-        ));
+        decoration: BoxDecoration(
+            color: AppColors.cardBg,
+            border: Border.all(color: AppColors.cardBorder),
+            borderRadius: BorderRadius.circular(16)
+        ),
+        clipBehavior: Clip.hardEdge, // Garante que o vídeo não passe das bordas arredondadas
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // Área do Vídeo com proporção 16:9 automática
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: _controller != null
+                    ? YoutubePlayer(controller: _controller!) // RODA O VÍDEO AQUI!
+                    : Stack( // O SEU DESIGN ORIGINAL FICA AQUI COMO FALLBACK (caso não tenha vídeo)
+                    fit: StackFit.expand,
+                    children: [
+                      Container(decoration: const BoxDecoration(gradient: LinearGradient(
+                          begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF020C14), Color(0xFF0F2050)]))),
+                      Center(child: Container(width: 56, height: 56,
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 12)]),
+                          child: const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 30))),
+                      Positioned(left: 12, bottom: 12,
+                          child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(999)),
+                              child: Text(widget.duration, style: const TextStyle(color: Colors.white, fontSize: 11)))),
+                    ]
+                ),
+              ),
+
+              // Textos do Card
+              Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text(widget.subtitle, style: const TextStyle(color: Color(0xFF999999), fontSize: 12)),
+                      ]
+                  )
+              ),
+            ])
+    );
   }
 }
 
